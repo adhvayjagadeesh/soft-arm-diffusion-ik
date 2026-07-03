@@ -1,0 +1,89 @@
+{
+  "sweep": "guidance",
+  "results": {
+    "0.0": {
+      "accuracy": {
+        "tip_err_best_of_K_mm": 49.585357308387756,
+        "tip_err_single_mm": 193.1220293045044,
+        "success_rate_best_of_K": 0.0
+      },
+      "multimodality": {
+        "mode_recall": 0.0,
+        "diversity": 0.0
+      },
+      "ms_per_target_batchK": 67.08618625998497
+    },
+    "0.5": {
+      "accuracy": {
+        "tip_err_best_of_K_mm": 4.745163023471832,
+        "tip_err_single_mm": 26.311274617910385,
+        "success_rate_best_of_K": 0.6171875
+      },
+      "multimodality": {
+        "mode_recall": 0.020000000298023225,
+        "diversity": 4.332650375366211
+      },
+      "ms_per_target_batchK": 67.64953210949898
+    },
+    "1.0": {
+      "accuracy": {
+        "tip_err_best_of_K_mm": 0.23416925978381187,
+        "tip_err_single_mm": 1.017557573504746,
+        "success_rate_best_of_K": 1.0
+      },
+      "multimodality": {
+        "mode_recall": 0.7933333426713943,
+        "diversity": 28.06403522491455
+      },
+      "ms_per_target_batchK": 33.73159095644951
+    },
+    "1.5": {
+      "accuracy": {
+        "tip_err_best_of_K_mm": 0.21720153745263815,
+        "tip_err_single_mm": 0.9097721194848418,
+        "success_rate_best_of_K": 1.0
+      },
+      "multimodality": {
+        "mode_recall": 0.8600000083446503,
+        "diversity": 28.68174934387207
+      },
+      "ms_per_target_batchK": 67.42564588785172
+    },
+    "2.0": {
+      "accuracy": {
+        "tip_err_best_of_K_mm": 0.3140267508570105,
+        "tip_err_single_mm": 1.2197204632684588,
+        "success_rate_best_of_K": 1.0
+      },
+      "multimodality": {
+        "mode_recall": 0.8066666722297668,
+        "diversity": 27.484607696533203
+      },
+      "ms_per_target_batchK": 66.71421974897385
+    },
+    "3.0": {
+      "accuracy": {
+        "tip_err_best_of_K_mm": 3.0951625667512417,
+        "tip_err_single_mm": 7.6368884183466434,
+        "success_rate_best_of_K": 0.875
+      },
+      "multimodality": {
+        "mode_recall": 0.5566666722297668,
+        "diversity": 26.50646448135376
+      },
+      "ms_per_target_batchK": 67.89563968777657
+    },
+    "4.0": {
+      "accuracy": {
+        "tip_err_best_of_K_mm": 13.179372064769268,
+        "tip_err_single_mm": 26.950202882289886,
+        "success_rate_best_of_K": 0.59375
+      },
+      "multimodality": {
+        "mode_recall": 0.25333333760499954,
+        "diversity": 15.666924476623535
+      },
+      "ms_per_target_batchK": 67.65014305710793
+    }
+  }
+}

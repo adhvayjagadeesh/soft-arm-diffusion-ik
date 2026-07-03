@@ -1,0 +1,77 @@
+{
+  "sweep": "ddim_steps",
+  "results": {
+    "5.0": {
+      "accuracy": {
+        "tip_err_best_of_K_mm": 2.6098755188286304,
+        "tip_err_single_mm": 15.556816011667252,
+        "success_rate_best_of_K": 0.90625
+      },
+      "multimodality": {
+        "mode_recall": 0.2066666692495346,
+        "diversity": 20.689212608337403
+      },
+      "ms_per_target_batchK": 7.156390696763992
+    },
+    "10.0": {
+      "accuracy": {
+        "tip_err_best_of_K_mm": 0.46240619849413633,
+        "tip_err_single_mm": 2.2336088586598635,
+        "success_rate_best_of_K": 1.0
+      },
+      "multimodality": {
+        "mode_recall": 0.946666669845581,
+        "diversity": 26.377550506591795
+      },
+      "ms_per_target_batchK": 13.189297169446945
+    },
+    "20.0": {
+      "accuracy": {
+        "tip_err_best_of_K_mm": 0.27008610777556896,
+        "tip_err_single_mm": 1.0589308803901076,
+        "success_rate_best_of_K": 1.0
+      },
+      "multimodality": {
+        "mode_recall": 0.8633333384990692,
+        "diversity": 28.154958724975586
+      },
+      "ms_per_target_batchK": 26.449326425790787
+    },
+    "50.0": {
+      "accuracy": {
+        "tip_err_best_of_K_mm": 0.22574019385501742,
+        "tip_err_single_mm": 0.8681413601152599,
+        "success_rate_best_of_K": 1.0
+      },
+      "multimodality": {
+        "mode_recall": 0.8733333349227905,
+        "diversity": 28.844922828674317
+      },
+      "ms_per_target_batchK": 84.58557724952698
+    },
+    "100.0": {
+      "accuracy": {
+        "tip_err_best_of_K_mm": 0.24071900406852365,
+        "tip_err_single_mm": 0.9960161987692118,
+        "success_rate_best_of_K": 1.0
+      },
+      "multimodality": {
+        "mode_recall": 0.8400000035762787,
+        "diversity": 28.740161323547362
+      },
+      "ms_per_target_batchK": 142.02745258808136
+    },
+    "200.0": {
+      "accuracy": {
+        "tip_err_best_of_K_mm": 0.2522315480746329,
+        "tip_err_single_mm": 0.9281872771680355,
+        "success_rate_best_of_K": 1.0
+      },
+      "multimodality": {
+        "mode_recall": 0.7900000035762786,
+        "diversity": 28.518572998046874
+      },
+      "ms_per_target_batchK": 308.969359844923
+    }
+  }
+}

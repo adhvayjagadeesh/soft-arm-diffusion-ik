@@ -34,8 +34,8 @@ train:
 eval:
   n_targets_accuracy: 512
   n_samples_per_target: 32
-  ddim_steps: 50
-  guidance: 1.5
+  ddim_steps: 20         # ablated in scripts/ablate.py: >=20 steps saturates accuracy/recall
+  guidance: 1.5          # ablated in scripts/ablate.py: peak of the accuracy/recall tradeoff
   success_tol: 0.005     # 5 mm on a 240 mm arm (~2% of arm length)
   n_targets_modes: 20
   mode_pool: 2000000
