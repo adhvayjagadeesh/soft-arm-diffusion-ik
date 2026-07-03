@@ -3,5 +3,7 @@ __pycache__/
 *.pyc
 data/
 checkpoints/
+checkpoints_seed*/
 figures/
 results.json
+results_seed*.json

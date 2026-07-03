@@ -27,10 +27,16 @@ def main():
     ap.add_argument("--model", required=True, choices=["diffusion", "mlp", "mdn"])
     ap.add_argument("--config", default="configs/default.yaml")
     ap.add_argument("--data", default="data")
+    ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--ckpt_dir", default=None, help="overrides train.ckpt_dir in the config")
     args = ap.parse_args()
+
+    torch.manual_seed(args.seed)
+    np.random.seed(args.seed)
 
     cfg = yaml.safe_load(open(args.config))
     tr_cfg, d_cfg, m_cfg = cfg["train"], cfg["data"], cfg["model"]
+    ckpt_dir = args.ckpt_dir or tr_cfg["ckpt_dir"]
     device = tr_cfg["device"] if torch.cuda.is_available() else "cpu"
     if device == "cpu" and tr_cfg["device"] == "cuda":
         print("WARNING: CUDA unavailable, training on CPU (will be slow).")
@@ -51,9 +57,9 @@ def main():
                             weight_decay=tr_cfg["weight_decay"])
     sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=tr_cfg["epochs"])
 
-    os.makedirs(tr_cfg["ckpt_dir"], exist_ok=True)
+    os.makedirs(ckpt_dir, exist_ok=True)
     best_val = float("inf")
-    ckpt_path = os.path.join(tr_cfg["ckpt_dir"], f"{args.model}.pt")
+    ckpt_path = os.path.join(ckpt_dir, f"{args.model}.pt")
 
     for epoch in range(tr_cfg["epochs"]):
         model.train()
