@@ -107,7 +107,8 @@ def main():
         n_modes_all = []
         for ti, t in enumerate(mode_targets):
             gt = enumerate_modes(arm, t, pool_size=ev["mode_pool"], tol=tol,
-                                 dbscan_eps=ev["dbscan_eps"])
+                                 dbscan_eps=ev["dbscan_eps"],
+                                 min_samples=ev.get("dbscan_min_samples", 10))
             n_modes_all.append(gt.shape[0])
             print(f"target {ti}: {gt.shape[0]} ground-truth modes")
             if gt.shape[0] == 0:
