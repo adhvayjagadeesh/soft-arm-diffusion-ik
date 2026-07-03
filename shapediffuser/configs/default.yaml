@@ -1,0 +1,46 @@
+# ShapeDiffuser default experiment configuration.
+
+arm:
+  n_segments: 4          # 4 segments x 3 chambers = 12-dim actuation (rich redundancy)
+  seg_length: 0.06       # metres; total arm length 0.24 m
+  curvature_gain: 25.0
+  points_per_seg: 10
+  rod_radius: 0.012
+
+data:
+  n_train: 500000
+  n_val: 20000
+  mode: uniform          # "uniform" (coverage) or "babble" (lecture-style walk)
+  babble_step: 0.08
+  shape_points: 8        # backbone points stored for shape-conditioning (8*3 = 24-D)
+  cond_type: tip         # "tip" (3-D target) or "shape" (whole-body target)
+  seed: 0
+
+model:
+  hidden: 512
+  n_blocks: 6
+  T: 1000                # diffusion training steps
+  cond_drop: 0.1         # classifier-free guidance dropout
+  mdn_k: 8
+
+train:
+  batch_size: 1024
+  lr: 3.0e-4
+  epochs: 60
+  weight_decay: 1.0e-6
+  device: cuda           # falls back to cpu automatically if unavailable
+  ckpt_dir: checkpoints
+
+eval:
+  n_targets_accuracy: 512
+  n_samples_per_target: 32
+  ddim_steps: 50
+  guidance: 1.5
+  success_tol: 0.005     # 5 mm on a 240 mm arm (~2% of arm length)
+  n_targets_modes: 20
+  mode_pool: 2000000
+  dbscan_eps: 0.35
+  mode_match_radius: 0.35
+  n_obstacle_trials: 200
+  n_obstacles: 3
+  obstacle_radius: 0.02
