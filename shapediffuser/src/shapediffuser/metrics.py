@@ -38,12 +38,31 @@ def chamfer(bb_a: torch.Tensor, bb_b: torch.Tensor) -> torch.Tensor:
     return 0.5 * (d.min(dim=-1).values.mean(dim=-1) + d.min(dim=-2).values.mean(dim=-1))
 
 
-def diversity(q_success: torch.Tensor) -> float:
-    """Mean pairwise L2 among successful solutions for one target. (n, q_dim)."""
-    n = q_success.shape[0]
+def curvature_features(arm: PCCArm, q: torch.Tensor) -> torch.Tensor:
+    """q: (..., q_dim) pressures in [0,1] -> (..., 2*n_segments) per-segment (kx, ky).
+
+    Each segment's 3 chamber pressures map to curvature through a rank-2 linear
+    map (see PCCArm.pressures_to_curvature), so adding a common offset to all 3
+    chambers of a segment leaves (kx, ky) — and therefore the whole arm shape —
+    unchanged. Raw pressure-space distance conflates this trivial gauge freedom
+    with genuine differences in arm configuration; (kx, ky) does not, so it is
+    the right space for clustering/matching/diversity over *distinct shapes*.
+    """
+    flat = q.reshape(-1, arm.q_dim)
+    kx, ky = arm.pressures_to_curvature(flat)
+    feat = torch.cat([kx, ky], dim=-1)
+    return feat.view(*q.shape[:-1], -1)
+
+
+def diversity(features: torch.Tensor) -> float:
+    """Mean pairwise L2 among successful solutions for one target.
+
+    Pass curvature_features(arm, q_success), not raw q — see curvature_features.
+    """
+    n = features.shape[0]
     if n < 2:
         return 0.0
-    d = torch.cdist(q_success, q_success)
+    d = torch.cdist(features, features)
     return (d.sum() / (n * (n - 1))).item()
 
 
@@ -60,9 +79,13 @@ def enumerate_modes(
 ) -> torch.Tensor:
     """Ground-truth IK mode enumeration by dense random sweep + clustering.
 
-    Returns (n_modes, q_dim) cluster medoids of actuations whose tip lands
-    within `tol` of the target. Because the arm and tolerance are ours to
-    choose in simulation, this gives an honest reference solution set.
+    Clusters candidate solutions in curvature-feature space (see
+    curvature_features) rather than raw pressures, since raw pressures have a
+    4-segment-dimensional null space (common-mode chamber offsets) that leaves
+    the arm shape unchanged, which would otherwise contaminate clustering with
+    physically meaningless "differences". Returns (n_modes, 2*n_segments)
+    cluster medoids in curvature space. Because the arm and tolerance are ours
+    to choose in simulation, this gives an honest reference solution set.
     """
     if not _HAS_SKLEARN:
         raise RuntimeError("mode enumeration requires scikit-learn")
@@ -78,30 +101,39 @@ def enumerate_modes(
         if m.any():
             kept.append(q[m])
     if not kept:
-        return torch.empty(0, arm.q_dim)
-    qs = torch.cat(kept).numpy()
-    labels = DBSCAN(eps=dbscan_eps, min_samples=min_samples).fit(qs).labels_
+        return torch.empty(0, 2 * arm.n_segments)
+    qs = torch.cat(kept)
+    feats = curvature_features(arm, qs).numpy()
+    labels = DBSCAN(eps=dbscan_eps, min_samples=min_samples).fit(feats).labels_
     modes = []
     for lab in sorted(set(labels) - {-1}):
-        cluster = qs[labels == lab]
+        cluster = feats[labels == lab]
         center = cluster.mean(axis=0)
         medoid = cluster[np.argmin(((cluster - center) ** 2).sum(axis=1))]
         modes.append(medoid)
-    return torch.as_tensor(np.stack(modes), dtype=torch.float32) if modes else torch.empty(0, arm.q_dim)
+    return (
+        torch.as_tensor(np.stack(modes), dtype=torch.float32)
+        if modes
+        else torch.empty(0, 2 * arm.n_segments)
+    )
 
 
 def mode_recall(
-    gt_modes: torch.Tensor, q_samples: torch.Tensor, success_mask: torch.Tensor,
+    gt_modes: torch.Tensor, sample_features: torch.Tensor, success_mask: torch.Tensor,
     radius: float = 0.35,
 ) -> float:
     """Fraction of ground-truth modes that have at least one *successful*
-    generated sample within `radius` in actuation space."""
+    generated sample within `radius` in curvature-feature space.
+
+    gt_modes: from enumerate_modes. sample_features: curvature_features(arm, q_samples),
+    not raw q — see curvature_features.
+    """
     if gt_modes.shape[0] == 0:
         return float("nan")
-    q_ok = q_samples[success_mask]
-    if q_ok.shape[0] == 0:
+    feat_ok = sample_features[success_mask]
+    if feat_ok.shape[0] == 0:
         return 0.0
-    d = torch.cdist(gt_modes, q_ok)  # (M, n_ok)
+    d = torch.cdist(gt_modes, feat_ok)  # (M, n_ok)
     return (d.min(dim=-1).values < radius).float().mean().item()
 
 

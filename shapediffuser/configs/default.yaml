@@ -39,9 +39,9 @@ eval:
   success_tol: 0.005     # 5 mm on a 240 mm arm (~2% of arm length)
   n_targets_modes: 20
   mode_pool: 2000000
-  dbscan_eps: 0.75
+  dbscan_eps: 12.0
   dbscan_min_samples: 5
-  mode_match_radius: 0.35
+  mode_match_radius: 15.0     # curvature-space (kx,ky); same order as dbscan_eps by design
   n_obstacle_trials: 200
   n_obstacles: 3
   obstacle_radius: 0.02

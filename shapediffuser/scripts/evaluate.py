@@ -25,7 +25,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from shapediffuser import PCCArm, BabblingDataset, Normalizer, build_model, grad_ik  # noqa: E402
 from shapediffuser.metrics import (  # noqa: E402
-    tip_error, diversity, enumerate_modes, mode_recall, sample_reachable_targets,
+    tip_error, diversity, curvature_features, enumerate_modes, mode_recall,
+    sample_reachable_targets,
 )
 
 
@@ -117,9 +118,10 @@ def main():
                 qs = sampler(t.unsqueeze(0), K)[0]  # (K, q_dim)
                 errs = tip_error(arm, qs, t.unsqueeze(0).expand(K, -1))
                 ok = errs < tol
+                feats = curvature_features(arm, qs)
                 agg[name]["recall"].append(
-                    mode_recall(gt, qs, ok, radius=ev["mode_match_radius"]))
-                agg[name]["diversity"].append(diversity(qs[ok]))
+                    mode_recall(gt, feats, ok, radius=ev["mode_match_radius"]))
+                agg[name]["diversity"].append(diversity(feats[ok]))
         results["gt_modes_mean"] = float(np.mean(n_modes_all)) if n_modes_all else 0.0
         for name in samplers:
             results[name]["multimodality"] = {
