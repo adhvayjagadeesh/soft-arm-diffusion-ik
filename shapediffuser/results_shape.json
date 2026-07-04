@@ -1,0 +1,32 @@
+{
+  "diffusion": {
+    "accuracy": {
+      "shape_err_best_of_K_mm": 0.14743907377123833,
+      "shape_err_single_mm": 0.5587239284068346,
+      "success_rate_best_of_K": 1.0
+    },
+    "multimodality": {
+      "diversity": 0.3295637459959835
+    },
+    "timing": {
+      "ms_per_target_batchK": 25.967076420783997,
+      "K": 32,
+      "device": "cpu"
+    }
+  },
+  "mlp": {
+    "accuracy": {
+      "shape_err_best_of_K_mm": 0.48700085608288646,
+      "shape_err_single_mm": 0.48700085608288646,
+      "success_rate_best_of_K": 1.0
+    },
+    "multimodality": {
+      "diversity": 0.00195127006736584
+    },
+    "timing": {
+      "ms_per_target_batchK": 0.009752810001373291,
+      "K": 32,
+      "device": "cpu"
+    }
+  }
+}
