@@ -95,12 +95,16 @@ def main():
               f"{np.array2string(elastica_err * 1000, precision=1)}", flush=True)
 
     per_target_elastica_err = np.stack(per_target_elastica_err)  # (n_targets, k)
+    n = per_target_elastica_err.shape[0]
 
-    results = {"n_targets": args.n_targets, "k": args.k, "budgets": {}}
+    results = {"n_targets": args.n_targets, "k": args.k, "budgets": {},
+              "per_target_elastica_err_mm": (per_target_elastica_err * 1000).tolist()}
     for m in budgets:
         best_of_m = per_target_elastica_err[:, :m].min(axis=1)  # (n_targets,)
+        mm = best_of_m * 1000
         results["budgets"][m] = {
-            "elastica_tip_err_best_of_m_mm": float(best_of_m.mean() * 1000),
+            "elastica_tip_err_best_of_m_mm": float(mm.mean()),
+            "elastica_tip_err_sem_mm": float(mm.std(ddof=1) / np.sqrt(n)),
             "elastica_success_rate_best_of_m": float((best_of_m < tol).mean()),
         }
         print(f"budget m={m}: {results['budgets'][m]}")
@@ -111,24 +115,45 @@ def main():
     print(f"\nWrote {args.out}")
 
     ms = sorted(results["budgets"].keys())
+    mean_err = [results["budgets"][m]["elastica_tip_err_best_of_m_mm"] for m in ms]
+    sem_err = [results["budgets"][m]["elastica_tip_err_sem_mm"] for m in ms]
     success = [results["budgets"][m]["elastica_success_rate_best_of_m"] for m in ms]
-    fig, ax = plt.subplots(figsize=(6, 4.5))
-    ax.plot(ms, success, marker="o", color="tab:blue", label="diffusion (ordered by PCC confidence)")
+
+    mlp_results = {}
     mlp_path = "transfer_study_results.json"
     if os.path.exists(mlp_path):
-        mlp_results = json.load(open(mlp_path))
-        if "mlp" in mlp_results:
-            mlp_rate = mlp_results["mlp"]["elastica_success_rate_best_of_K"]
-            ax.axhline(mlp_rate, color="tab:red", linestyle="--",
-                      label="mlp (1 candidate only - flat at any budget)")
-    ax.set_xscale("log", base=2)
-    ax.set_xticks(ms)
-    ax.set_xticklabels([str(m) for m in ms])
-    ax.set_xlabel("Elastica query budget m (candidates tested, PCC-confidence order)")
-    ax.set_ylabel("success rate under Elastica (tol=5mm)")
-    ax.set_title("Recovering PCC->Elastica transfer with a query budget")
-    ax.legend()
-    ax.grid(alpha=0.3)
+        mlp_results = json.load(open(mlp_path)).get("mlp", {})
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(11, 4.5))
+
+    ax1.errorbar(ms, mean_err, yerr=sem_err, marker="o", color="tab:blue",
+                capsize=4, label="diffusion (best-of-m, PCC-confidence order)")
+    if "elastica_tip_err_best_of_K_mm" in mlp_results:
+        ax1.axhline(mlp_results["elastica_tip_err_best_of_K_mm"], color="tab:red",
+                   linestyle="--", label="mlp (1 candidate only)")
+    ax1.set_xscale("log", base=2)
+    ax1.set_xticks(ms)
+    ax1.set_xticklabels([str(m) for m in ms])
+    ax1.set_xlabel("Elastica query budget m")
+    ax1.set_ylabel("mean best-of-m tip error under Elastica (mm)")
+    ax1.set_title("Headline: continuous error, mean +/- SEM")
+    ax1.legend(fontsize=8)
+    ax1.grid(alpha=0.3)
+
+    ax2.plot(ms, success, marker="o", color="tab:blue", label="diffusion")
+    if "elastica_success_rate_best_of_K" in mlp_results:
+        ax2.axhline(mlp_results["elastica_success_rate_best_of_K"], color="tab:red",
+                   linestyle="--", label="mlp")
+    ax2.set_xscale("log", base=2)
+    ax2.set_xticks(ms)
+    ax2.set_xticklabels([str(m) for m in ms])
+    ax2.set_ylim(-0.05, 1.05)
+    ax2.set_xlabel("Elastica query budget m")
+    ax2.set_ylabel("success rate (tol=5mm)")
+    ax2.set_title("Secondary: binary success (tol likely too strict\nfor this scale of mismatch)")
+    ax2.legend(fontsize=8)
+    ax2.grid(alpha=0.3)
+
     os.makedirs(os.path.dirname(args.fig) or ".", exist_ok=True)
     fig.tight_layout()
     fig.savefig(args.fig, dpi=200)
