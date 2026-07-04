@@ -95,7 +95,7 @@ class ElasticaArm:
         sim.finalize()
         ts = ea.PositionVerlet()
         ea.integrate(ts, sim, final_time=self.settle_time,
-                     n_steps=int(self.settle_time / self.dt))
+                     n_steps=int(self.settle_time / self.dt), progress_bar=False)
         return rod.position_collection.T.copy()  # (n_nodes, 3)
 
     def forward(self, q: torch.Tensor) -> dict:
