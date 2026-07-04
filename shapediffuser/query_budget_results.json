@@ -1,0 +1,31 @@
+{
+  "n_targets": 20,
+  "k": 32,
+  "budgets": {
+    "1": {
+      "elastica_tip_err_best_of_m_mm": 164.43421936035156,
+      "elastica_success_rate_best_of_m": 0.0
+    },
+    "2": {
+      "elastica_tip_err_best_of_m_mm": 149.13621520996094,
+      "elastica_success_rate_best_of_m": 0.0
+    },
+    "4": {
+      "elastica_tip_err_best_of_m_mm": 147.31942749023438,
+      "elastica_success_rate_best_of_m": 0.0
+    },
+    "8": {
+      "elastica_tip_err_best_of_m_mm": 140.11964416503906,
+      "elastica_success_rate_best_of_m": 0.0
+    },
+    "16": {
+      "elastica_tip_err_best_of_m_mm": 136.14312744140625,
+      "elastica_success_rate_best_of_m": 0.0
+    },
+    "32": {
+      "elastica_tip_err_best_of_m_mm": 131.82798767089844,
+      "elastica_success_rate_best_of_m": 0.0
+    }
+  },
+  "wall_clock_s": 2974.3610260486603
+}
