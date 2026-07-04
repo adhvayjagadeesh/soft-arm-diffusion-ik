@@ -29,6 +29,8 @@ def main():
     ap.add_argument("--data", default="data")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--ckpt_dir", default=None, help="overrides train.ckpt_dir in the config")
+    ap.add_argument("--n_train", type=int, default=None,
+                    help="use only the first n_train rows of train.npz (dataset-size ablation)")
     args = ap.parse_args()
 
     torch.manual_seed(args.seed)
@@ -42,6 +44,8 @@ def main():
         print("WARNING: CUDA unavailable, training on CPU (will be slow).")
 
     train_np = dict(np.load(os.path.join(args.data, "train.npz")))
+    if args.n_train is not None:
+        train_np = {k: v[: args.n_train] for k, v in train_np.items()}
     val_np = dict(np.load(os.path.join(args.data, "val.npz")))
     train_ds = BabblingDataset(train_np, cond_type=d_cfg["cond_type"])
     val_ds = BabblingDataset(val_np, cond_type=d_cfg["cond_type"],

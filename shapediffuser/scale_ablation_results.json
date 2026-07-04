@@ -1,0 +1,104 @@
+{
+  "5000": {
+    "accuracy": {
+      "tip_err_best_of_K_mm": 12.001221999526024,
+      "tip_err_single_mm": 35.53221374750137,
+      "success_rate_best_of_K": 0.1953125
+    },
+    "multimodality": {
+      "mode_recall": 0.02083333395421505,
+      "diversity": 0.0
+    },
+    "obstacle_task": {
+      "success_rate": 0.165
+    },
+    "timing": {
+      "ms_per_target_batchK": 23.16496893763542
+    }
+  },
+  "20000": {
+    "accuracy": {
+      "tip_err_best_of_K_mm": 1.8628847319632769,
+      "tip_err_single_mm": 7.4306149035692215,
+      "success_rate_best_of_K": 0.990234375
+    },
+    "multimodality": {
+      "mode_recall": 0.6083333361893892,
+      "diversity": 26.31984305381775
+    },
+    "obstacle_task": {
+      "success_rate": 0.965
+    },
+    "timing": {
+      "ms_per_target_batchK": 23.976974189281464
+    }
+  },
+  "50000": {
+    "accuracy": {
+      "tip_err_best_of_K_mm": 0.7845989894121885,
+      "tip_err_single_mm": 3.492552787065506,
+      "success_rate_best_of_K": 1.0
+    },
+    "multimodality": {
+      "mode_recall": 0.7333333399146795,
+      "diversity": 27.3555006980896
+    },
+    "obstacle_task": {
+      "success_rate": 0.98
+    },
+    "timing": {
+      "ms_per_target_batchK": 23.01967144012451
+    }
+  },
+  "100000": {
+    "accuracy": {
+      "tip_err_best_of_K_mm": 0.7060007192194462,
+      "tip_err_single_mm": 3.05293221026659,
+      "success_rate_best_of_K": 1.0
+    },
+    "multimodality": {
+      "mode_recall": 0.9041666686534882,
+      "diversity": 27.911054372787476
+    },
+    "obstacle_task": {
+      "success_rate": 0.975
+    },
+    "timing": {
+      "ms_per_target_batchK": 24.923186749219894
+    }
+  },
+  "200000": {
+    "accuracy": {
+      "tip_err_best_of_K_mm": 0.5093154031783342,
+      "tip_err_single_mm": 1.9176285713911057,
+      "success_rate_best_of_K": 1.0
+    },
+    "multimodality": {
+      "mode_recall": 0.8291666712611914,
+      "diversity": 28.398623824119568
+    },
+    "obstacle_task": {
+      "success_rate": 0.98
+    },
+    "timing": {
+      "ms_per_target_batchK": 52.06601694226265
+    }
+  },
+  "500000": {
+    "accuracy": {
+      "tip_err_best_of_K_mm": 0.4043859662488103,
+      "tip_err_single_mm": 1.646619290113449,
+      "success_rate_best_of_K": 1.0
+    },
+    "multimodality": {
+      "mode_recall": 0.8833333384245634,
+      "diversity": 28.11851143836975
+    },
+    "obstacle_task": {
+      "success_rate": 0.97
+    },
+    "timing": {
+      "ms_per_target_batchK": 50.225794315338135
+    }
+  }
+}

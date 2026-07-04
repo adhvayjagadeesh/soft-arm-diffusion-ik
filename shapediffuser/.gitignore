@@ -4,6 +4,9 @@ __pycache__/
 data/
 checkpoints/
 checkpoints_seed*/
+checkpoints_scale*/
+checkpoints_shape/
 figures/
 results.json
 results_seed*.json
+results_shape.json

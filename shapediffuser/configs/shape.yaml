@@ -1,0 +1,51 @@
+# Shape-conditioned variant: same as default.yaml but cond_type: shape
+# (whole-body 24-D target instead of the 3-D tip target). Same underlying
+# data/train.npz works unchanged since generate_dataset always stores both
+# "tip" and "shape" fields. Use with scripts/evaluate_shape.py, not
+# evaluate.py, since accuracy/success are measured in shape space here.
+
+arm:
+  n_segments: 4
+  seg_length: 0.06
+  curvature_gain: 25.0
+  points_per_seg: 10
+  rod_radius: 0.012
+
+data:
+  n_train: 500000
+  n_val: 20000
+  mode: uniform
+  babble_step: 0.08
+  shape_points: 8
+  cond_type: shape
+  seed: 0
+
+model:
+  hidden: 512
+  n_blocks: 6
+  T: 1000
+  cond_drop: 0.1
+  mdn_k: 8
+
+train:
+  batch_size: 1024
+  lr: 3.0e-4
+  epochs: 60
+  weight_decay: 1.0e-6
+  device: cuda
+  ckpt_dir: checkpoints_shape
+
+eval:
+  n_targets_accuracy: 512
+  n_samples_per_target: 32
+  ddim_steps: 20
+  guidance: 1.5
+  success_tol: 0.005     # mean per-point L2 (m) on the 8-point backbone
+  n_targets_modes: 20
+  mode_pool: 2000000
+  dbscan_eps: 12.0
+  dbscan_min_samples: 5
+  mode_match_radius: 15.0
+  n_obstacle_trials: 200
+  n_obstacles: 3
+  obstacle_radius: 0.02
