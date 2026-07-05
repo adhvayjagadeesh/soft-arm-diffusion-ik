@@ -1,0 +1,44 @@
+{
+  "2": {
+    "diffusion": {
+      "tip_err_best_of_K_mm": 0.11256606376264244,
+      "success_rate_best_of_K": 1.0,
+      "obstacle_task_success_rate": 0.745,
+      "ms_per_target": 33.851783722639084
+    },
+    "mlp": {
+      "tip_err_best_of_K_mm": 1.7187756020575762,
+      "success_rate_best_of_K": 0.75,
+      "obstacle_task_success_rate": 0.46,
+      "ms_per_target": 0.012110918760299683
+    }
+  },
+  "4": {
+    "diffusion": {
+      "tip_err_best_of_K_mm": 0.27724727988243103,
+      "success_rate_best_of_K": 1.0,
+      "obstacle_task_success_rate": 0.975,
+      "ms_per_target": 27.479656040668488
+    },
+    "mlp": {
+      "tip_err_best_of_K_mm": 13.461470603942871,
+      "success_rate_best_of_K": 0.052734375,
+      "obstacle_task_success_rate": 0.045,
+      "ms_per_target": 0.0068731606006622314
+    }
+  },
+  "6": {
+    "diffusion": {
+      "tip_err_best_of_K_mm": 0.9174668230116367,
+      "success_rate_best_of_K": 0.998046875,
+      "obstacle_task_success_rate": 1.0,
+      "ms_per_target": 20.565543323755264
+    },
+    "mlp": {
+      "tip_err_best_of_K_mm": 33.87243300676346,
+      "success_rate_best_of_K": 0.01171875,
+      "obstacle_task_success_rate": 0.01,
+      "ms_per_target": 0.006157904863357544
+    }
+  }
+}
