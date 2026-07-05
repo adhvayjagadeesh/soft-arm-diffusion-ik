@@ -11,13 +11,24 @@ by spending a small budget of m <= K expensive Elastica evaluations to
 *select* among those candidates, versus having no candidates to select from
 at all.
 
-Candidates are tried in ascending order of PCC-predicted error (the realistic
-"try your most simulator-confident solution first" strategy an operator
-would actually use) - not an oracle ordering. All K Elastica evaluations are
-cached once per target so every budget size is computed post-hoc from the
-same cached array, no re-simulation needed.
+Two candidate orderings are supported (--order):
+  pcc       ascending PCC-predicted error (the realistic "try your most
+            simulator-confident solution first" strategy) - the original,
+            default ordering.
+  diversity greedy farthest-point selection in curvature-feature space,
+            seeded from the same PCC-best candidate (so budget=1 is identical
+            between orderings, isolating the effect of *ordering* the
+            remaining budget rather than changing the first guess): does
+            spending your query budget on maximally-different candidates
+            reach the same accuracy with a smaller m than PCC-confidence
+            order?
 
-    python scripts/query_budget_study.py --n_targets 20 --k 32
+All K Elastica evaluations are cached once per target (in --order's chosen
+sequence) so every budget size is computed post-hoc from the same cached
+array, no re-simulation needed.
+
+    python scripts/query_budget_study.py --n_targets 45 --k 32 --order pcc
+    python scripts/query_budget_study.py --n_targets 45 --k 32 --order diversity
 """
 
 import argparse
@@ -38,8 +49,26 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from shapediffuser import PCCArm  # noqa: E402
 from shapediffuser.elastica_arm import ElasticaArm  # noqa: E402
-from shapediffuser.metrics import sample_reachable_targets  # noqa: E402
+from shapediffuser.metrics import sample_reachable_targets, curvature_features  # noqa: E402
 from evaluate import load_model, make_sampler  # noqa: E402
+
+
+def diversity_order(feats: torch.Tensor, seed_idx: int) -> list:
+    """Greedy farthest-point ordering in feature space, starting from seed_idx."""
+    n = feats.shape[0]
+    remaining = set(range(n))
+    order = [seed_idx]
+    remaining.discard(seed_idx)
+    min_dist = torch.cdist(feats[seed_idx:seed_idx + 1], feats).squeeze(0)
+    while remaining:
+        rem_list = list(remaining)
+        rem_dists = min_dist[rem_list]
+        next_idx = rem_list[int(torch.argmax(rem_dists).item())]
+        order.append(next_idx)
+        remaining.discard(next_idx)
+        d_new = torch.cdist(feats[next_idx:next_idx + 1], feats).squeeze(0)
+        min_dist = torch.minimum(min_dist, d_new)
+    return order
 
 
 def main():
@@ -52,6 +81,7 @@ def main():
                     help="comma-separated Elastica-query budgets m <= k to evaluate")
     ap.add_argument("--seed", type=int, default=4242,
                     help="matches transfer_study.py's default for comparable targets")
+    ap.add_argument("--order", default="pcc", choices=["pcc", "diversity"])
     ap.add_argument("--out", default="query_budget_results.json")
     ap.add_argument("--fig", default="figures/query_budget_curve.png")
     args = ap.parse_args()
@@ -83,7 +113,13 @@ def main():
         with torch.no_grad():
             pcc_tip = pcc.forward(qs)["tip"]
         pcc_err = (pcc_tip - t).norm(dim=-1)
-        order = torch.argsort(pcc_err)
+        pcc_order = torch.argsort(pcc_err)
+
+        if args.order == "pcc":
+            order = pcc_order
+        else:
+            feats = curvature_features(pcc, qs)
+            order = torch.as_tensor(diversity_order(feats, int(pcc_order[0].item())))
         qs_ordered = qs[order]
 
         elastica_tip = elastica.forward(qs_ordered)["tip"]
@@ -91,13 +127,13 @@ def main():
         per_target_elastica_err.append(elastica_err)
         print(f"target {ti + 1}/{len(targets)}: "
               f"pcc-best {pcc_err.min().item() * 1000:.2f}mm  "
-              f"elastica errs (PCC-order) [mm] = "
+              f"elastica errs ({args.order}-order) [mm] = "
               f"{np.array2string(elastica_err * 1000, precision=1)}", flush=True)
 
     per_target_elastica_err = np.stack(per_target_elastica_err)  # (n_targets, k)
     n = per_target_elastica_err.shape[0]
 
-    results = {"n_targets": args.n_targets, "k": args.k, "budgets": {},
+    results = {"n_targets": args.n_targets, "k": args.k, "order": args.order, "budgets": {},
               "per_target_elastica_err_mm": (per_target_elastica_err * 1000).tolist()}
     for m in budgets:
         best_of_m = per_target_elastica_err[:, :m].min(axis=1)  # (n_targets,)
@@ -127,7 +163,7 @@ def main():
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(11, 4.5))
 
     ax1.errorbar(ms, mean_err, yerr=sem_err, marker="o", color="tab:blue",
-                capsize=4, label="diffusion (best-of-m, PCC-confidence order)")
+                capsize=4, label=f"diffusion (best-of-m, {args.order}-order)")
     if "elastica_tip_err_best_of_K_mm" in mlp_results:
         ax1.axhline(mlp_results["elastica_tip_err_best_of_K_mm"], color="tab:red",
                    linestyle="--", label="mlp (1 candidate only)")
