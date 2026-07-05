@@ -5,7 +5,8 @@ data/
 checkpoints/
 checkpoints_seed*/
 checkpoints_scale*/
-checkpoints_shape/
+checkpoints_shape*/
 figures/
 results.json
 results_seed*.json
+results_shape_seed*.json
