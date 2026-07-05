@@ -118,6 +118,34 @@ genuine negative result, not a reason to keep searching until something
 sticks - the mechanism behind which targets benefit from candidate selection
 remains an open question.
 
+**Does *how* you spend the query budget matter?
+(`scripts/query_budget_ordering_paired.py`, n=45, paired design - one Elastica
+pass per target, both orderings reindex the same cached per-candidate errors,
+so the comparison isn't confounded by between-run sampling noise):** yes,
+**confirmed**. Ordering candidates by diversity (greedy farthest-point in
+curvature space, seeded from the same PCC-best candidate as the baseline, so
+budget=1 is identical between orderings) significantly beats naive
+PCC-confidence ordering in the middle of the budget range:
+
+| budget m | 2 | 4 | 8 | 16 |
+|---|---|---|---|---|
+| mean advantage (mm) | 3.65 | 4.59 | **6.70** | **3.27** |
+| paired t-stat | 1.55 | 1.97 (p~0.055) | **3.34 (p~0.002)** | **3.21 (p~0.002)** |
+| targets: diversity wins / pcc wins | 15/13 | 18/18 | 24/12 | 19/9 |
+
+(m=1 and m=32 correctly converge to zero difference by construction - both
+orderings start from the same best guess and eventually exhaust the same full
+candidate set.) An earlier, less rigorous *independent-runs* comparison (each
+ordering sampled its own candidates) showed the same direction but wasn't
+statistically distinguishable from noise - the paired design is what makes
+this a real result rather than a repeat of the diversity-correlation false
+lead above. **This is the project's first confirmed improvement over the
+naive query-budget baseline**: multimodality isn't just "helpful in the
+aggregate" (the earlier finding), it's *actionably* helpful - a
+diversity-aware query strategy measurably outperforms the obvious baseline
+strategy, especially once you have a moderate (not minimal, not maximal)
+number of queries to spend.
+
 ## Novelty / related work
 
 Checked against the closest published work before committing to the
@@ -167,8 +195,9 @@ scripts/
   evaluate_shape.py               evaluation for the shape-conditioned variant
   multiseed_shape.py             3-seed statistics for the shape-conditioned variant
   transfer_study.py              PCC-trained model executed on Elastica
-  query_budget_study.py          candidate-selection-under-mismatch, budget sweep
+  query_budget_study.py          candidate-selection-under-mismatch, budget sweep (--order pcc|diversity)
   query_budget_correlation.py    tests predictors of per-target selection benefit
+  query_budget_ordering_paired.py  paired pcc-order vs diversity-order comparison (confirmed result)
 ```
 
 ## Quickstart
@@ -231,22 +260,26 @@ python scripts/query_budget_correlation.py --query_budget_results query_budget_r
   capture actuator hysteresis) was searched for and not found publicly
   available.
 
-## Open threads / next steps (not yet done)
+## Open threads / next steps
 
-In rough priority order, based on what's been tried and what hasn't:
+**Resolved:** ~~Smarter candidate ordering~~ - confirmed:
+diversity-ordering significantly beats PCC-confidence ordering at moderate
+budgets (m=8,16; see Results above and `query_budget_ordering_paired.json`).
 
-1. **Smarter candidate ordering.** query_budget_study.py orders candidates by
-   PCC-confidence; untested whether an information-seeking or
-   diversity-maximizing order reaches the same best-of-32 error with a
-   smaller budget.
-2. **Actual model adaptation**, not just selection: use a handful of Elastica
+Remaining, in rough priority order:
+
+1. **Actual model adaptation**, not just selection: use a handful of Elastica
    samples to fit a residual correction or re-bias the diffusion sampler,
    rather than filtering among candidates from an unadapted model. This is a
    bigger design effort but directly tests whether the query-budget study's
-   "selection alone isn't enough" finding can be fixed with adaptation.
-3. **Morphology generalization**: a small sweep over 2-3 different segment
+   "selection alone isn't enough" finding can be fixed with adaptation - the
+   diversity-ordering result suggests *how* you select already matters a lot,
+   so adaptation informed by that (e.g. bias sampling toward whatever
+   diversity-ordering is implicitly finding) may be the natural next step
+   rather than a from-scratch direction.
+2. **Morphology generalization**: a small sweep over 2-3 different segment
    counts/lengths within the same PCC-arm family (not a new topology, to
    avoid overlapping with IKDiffuser's rigid-multi-arm structure-agnostic
    framing).
-4. **Real hardware or a suitable public dataset**, if one turns up - would
+3. **Real hardware or a suitable public dataset**, if one turns up - would
    upgrade the sim-to-sim transfer story to genuine sim-to-real.
