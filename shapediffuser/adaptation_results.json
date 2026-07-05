@@ -1,0 +1,15 @@
+{
+  "n_targets": 15,
+  "k": 16,
+  "guidance_scale": 0.3,
+  "baseline_best_of_k_mean_mm": 134.58273315429688,
+  "guided_best_of_k_mean_mm": 129.0181884765625,
+  "baseline_success_rate": 0.0,
+  "guided_success_rate": 0.0,
+  "paired_delta_mean_mm": 5.564549446105957,
+  "paired_delta_sem_mm": 2.454496645737469,
+  "paired_delta_t": 2.2670837443462,
+  "n_targets_guided_better": 11,
+  "n_targets_baseline_better": 4,
+  "wall_clock_s": 2883.9962010383606
+}
