@@ -163,6 +163,32 @@ obstacle-task gap at 6 segments (100% vs 1%) is the largest in the whole
 project - **the advantage grows, not shrinks, with more redundancy**, the
 more scientifically interesting direction to have confirmed.
 
+**Model adaptation via transfer-guided sampling
+(`scripts/train_transfer_regressor.py`, `scripts/evaluate_adaptation.py`,
+`GaussianDiffusion.sample_with_transfer_guidance` in `models.py`):** rather
+than reranking/correcting already-sampled candidates (the query-budget
+thread above), this steers the diffusion sampling process itself using a
+small learned regressor that predicts Elastica transfer error from
+(candidate, target) - the same mechanism as classifier guidance in image
+diffusion, applied to shape the generative distribution toward the
+mismatch-robust region rather than filtering after the fact. Trained on 25
+targets (seed=8888), tested on **15 held-out targets** (seed=9999, never
+seen by the regressor - the whole point, since only helping on training
+targets would be memorization):
+
+| | baseline (unguided) | guided |
+|---|---|---|
+| mean best-of-16 Elastica err (mm) | 134.6 | **129.0** |
+
+Paired delta 5.56 +/- 2.45mm, **t=2.27 (p~0.04)**, 11/15 targets favor
+guidance. This crosses conventional significance and genuinely generalizes to
+unseen targets, so it's real adaptation, not memorization - but report this
+calibrated, not oversold: the effect is modest (~4% error reduction) and the
+significance margin is noticeably weaker than the diversity-ordering result
+(t=3.34 there vs. t=2.27 here). Worth replicating with more held-out targets
+before leaning on it hard in a writeup, and worth trying alongside
+diversity-ordering (apply both together) as a natural next step.
+
 ## Novelty / related work
 
 Checked against the closest published work before committing to the
@@ -176,8 +202,9 @@ are still current before relying on this for a submission):
   continuum manipulators; low direct overlap.
 * General diffusion-policy candidate-selection (picking one action from a
   multimodal policy's samples) is an active area, but framed around learned
-  scorers, not a *query-budget* question, and not applied to soft-arm
-  sim-to-sim transfer specifically.
+  scorers used to *rerank already-generated* candidates, not to *guide
+  generation itself* (the transfer-guided-sampling result above) - and not
+  applied to soft-arm sim-to-sim transfer specifically.
 * No public dataset was found that drops in as real-world validation for this
   specific actuation-to-shape task (SoPrA is a real, structurally similar
   platform used in several papers, but no confirmed public data release;
@@ -187,9 +214,14 @@ are still current before relying on this for a submission):
 The most defensible novel framing right now: a soft-continuum-specific,
 reproducible **sim-to-sim** testbed (PCC vs. Cosserat) quantifying that (a)
 multimodal diffusion IK's advantage is redundancy-specific (shown by the
-shape-conditioning collapse), and (b) that advantage does not survive a
-severe, structural model-mismatch, with passive candidate selection providing
-only a bounded recovery whose per-target variance is not yet explained.
+shape-conditioning collapse) and generalizes across morphologies, (b) that
+advantage does not survive a severe, structural model-mismatch, and (c) both
+passive candidate selection (diversity-ordering) and active generation
+guidance (transfer-guided sampling) provide real but bounded, only partially
+understood recovery from that mismatch - candidate diversity itself doesn't
+explain the recovery's per-target variance (tested and rejected), so the
+underlying mechanism remains an open question even where the effect is
+confirmed.
 
 ## Repo layout
 
@@ -203,7 +235,7 @@ src/shapediffuser/
   pcc_arm.py                     differentiable PCC arm (fast GT engine + grad-IK baseline)
   elastica_arm.py                PyElastica Cosserat arm (verified working, ~4s/sample, unbatched)
   data.py                        motor babbling generation, Dataset, normalization
-  models.py                      diffusion (DDPM/DDIM + CFG), MLP, MDN
+  models.py                      diffusion (DDPM/DDIM + CFG), MLP, MDN, TransferRegressor + guided sampling
   metrics.py                     tip/chamfer error, curvature_features, diversity, mode enumeration/recall
 scripts/
   generate_data.py  train.py  evaluate.py  visualize.py      core pipeline
@@ -217,6 +249,8 @@ scripts/
   query_budget_correlation.py    tests predictors of per-target selection benefit
   query_budget_ordering_paired.py  paired pcc-order vs diversity-order comparison (confirmed result)
   morphology_sweep.py             confirms E1/E3/E4 generalize across 2/4/6-segment arms
+  train_transfer_regressor.py    fits the Elastica-error regressor used for guided sampling
+  evaluate_adaptation.py         guided vs. unguided sampling on held-out targets (confirmed result)
 ```
 
 ## Quickstart
@@ -290,16 +324,18 @@ story holds (and the diffusion-vs-mlp gap grows) across 2/4/6-segment arms;
 see Results above and `morphology_sweep_results.json`. E2 was not
 regeneralized (would need per-morphology dbscan recalibration).
 
-Remaining, in rough priority order:
+**Resolved:** ~~Actual model adaptation~~ - confirmed, modestly: transfer-guided
+sampling (steering generation with a learned Elastica-error regressor, see
+Results above) beats plain unguided sampling on held-out targets (t=2.27,
+p~0.04), genuinely generalizing rather than memorizing. Effect size is
+modest (~4% error reduction) and the significance margin is weaker than the
+diversity-ordering result - flagged as "confirmed but modest," worth
+replicating with more held-out targets before leaning on it hard.
 
-1. **Actual model adaptation**, not just selection: use a handful of Elastica
-   samples to fit a residual correction or re-bias the diffusion sampler,
-   rather than filtering among candidates from an unadapted model. This is a
-   bigger design effort but directly tests whether the query-budget study's
-   "selection alone isn't enough" finding can be fixed with adaptation - the
-   diversity-ordering result suggests *how* you select already matters a lot,
-   so adaptation informed by that (e.g. bias sampling toward whatever
-   diversity-ordering is implicitly finding) may be the natural next step
-   rather than a from-scratch direction.
+Remaining:
+
+1. **Combine diversity-ordering and transfer-guided sampling** - they're
+   different mechanisms (post-hoc selection vs. generation-time guidance)
+   with similar-magnitude individual effects; untested whether they stack.
 2. **Real hardware or a suitable public dataset**, if one turns up - would
    upgrade the sim-to-sim transfer story to genuine sim-to-real.
