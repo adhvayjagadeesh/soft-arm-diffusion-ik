@@ -150,6 +150,72 @@ class GaussianDiffusion(nn.Module):
                 x = x0
         return x.view(B, n_samples, self.q_dim)
 
+    def sample_with_transfer_guidance(
+        self,
+        cond: torch.Tensor,
+        transfer_regressor: "TransferRegressor",
+        transfer_guidance_scale: float = 0.0,
+        n_samples: int = 1,
+        steps: int = 50,
+        guidance: float = 1.0,
+    ) -> torch.Tensor:
+        """Same DDIM loop as sample(), plus an energy-guidance step: at each
+        denoising iteration, nudge the predicted x0 along -grad(transfer_regressor)
+        so the sampling trajectory is steered toward the region the regressor
+        predicts will transfer well - not just filtering/reranking already-
+        generated candidates, but shaping what the model generates in the first
+        place. transfer_guidance_scale=0 recovers plain sample() exactly.
+        """
+        device = cond.device
+        B = cond.shape[0]
+        x = torch.randn(B * n_samples, self.q_dim, device=device)
+        cond_rep = cond.repeat_interleave(n_samples, dim=0)
+        times = torch.linspace(self.T - 1, 0, steps, device=device).round().long()
+        for i in range(len(times)):
+            t = times[i]
+            tb = torch.full((x.shape[0],), int(t), device=device, dtype=torch.long)
+            with torch.no_grad():
+                eps = self.denoiser(x, tb, cond_rep)
+                if guidance != 1.0:
+                    eps_u = self.denoiser(x, tb, None)
+                    eps = eps_u + guidance * (eps - eps_u)
+                a_t = self.alphas_cumprod[t]
+                x0 = (x - (1.0 - a_t).sqrt() * eps) / a_t.sqrt()
+                x0 = x0.clamp(-1.2, 1.2)
+
+            if transfer_guidance_scale > 0:
+                x0_req = x0.detach().clone().requires_grad_(True)
+                with torch.enable_grad():
+                    pred_err = transfer_regressor(x0_req, cond_rep)
+                    grad = torch.autograd.grad(pred_err.sum(), x0_req)[0]
+                x0 = (x0 - transfer_guidance_scale * grad).clamp(-1.2, 1.2)
+
+            if i + 1 < len(times):
+                a_prev = self.alphas_cumprod[times[i + 1]]
+                x = a_prev.sqrt() * x0 + (1.0 - a_prev).sqrt() * eps
+            else:
+                x = x0
+        return x.view(B, n_samples, self.q_dim)
+
+
+class TransferRegressor(nn.Module):
+    """Predicts sim-to-sim (PCC -> Elastica) transfer error from a candidate
+    actuation and its target, so it can be used as a guidance signal during
+    diffusion sampling (see GaussianDiffusion.sample_with_transfer_guidance).
+    q_scaled is in the same [-1,1] representation the diffusion model itself
+    samples in; cond is the same normalized conditioning vector."""
+
+    def __init__(self, q_dim: int, cond_dim: int, hidden: int = 128):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(q_dim + cond_dim, hidden), nn.SiLU(),
+            nn.Linear(hidden, hidden), nn.SiLU(),
+            nn.Linear(hidden, 1),
+        )
+
+    def forward(self, q_scaled: torch.Tensor, cond: torch.Tensor) -> torch.Tensor:
+        return self.net(torch.cat([q_scaled, cond], dim=-1)).squeeze(-1)
+
 
 # --------------------------------------------------------------------------- #
 class MLPRegressor(nn.Module):
