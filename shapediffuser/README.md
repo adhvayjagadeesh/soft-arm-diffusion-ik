@@ -146,6 +146,23 @@ diversity-aware query strategy measurably outperforms the obvious baseline
 strategy, especially once you have a moderate (not minimal, not maximal)
 number of queries to spend.
 
+**Morphology generalization (`scripts/morphology_sweep.py`, 2/4/6-segment PCC
+arms, `morphology_sweep_results.json`, E1/E3/E4 only - E2's dbscan
+calibration is 4-segment-specific, out of scope here):**
+
+| n_segments | diffusion err (mm) / success | mlp err (mm) / success | obstacle: diffusion / mlp |
+|---|---|---|---|
+| 2 | 0.113 / 100% | 1.719 / 75.0% | 0.745 / 0.460 |
+| 4 | 0.277 / 100% | 13.461 / 5.3% | 0.975 / 0.045 |
+| 6 | 0.917 / 99.8% | 33.872 / 1.2% | **1.000 / 0.010** |
+
+The core thesis is not an artifact of the one 4-segment arm used everywhere
+else: as segment count (and actuation redundancy) grows, mlp's error explodes
+and its success collapses while diffusion degrades far more gracefully. The
+obstacle-task gap at 6 segments (100% vs 1%) is the largest in the whole
+project - **the advantage grows, not shrinks, with more redundancy**, the
+more scientifically interesting direction to have confirmed.
+
 ## Novelty / related work
 
 Checked against the closest published work before committing to the
@@ -178,9 +195,10 @@ only a bounded recovery whose per-target variance is not yet explained.
 
 ```
 configs/
-  default.yaml                   tip-conditioned, main config
+  default.yaml                   tip-conditioned, main config (4-segment arm)
   shape.yaml                     shape-conditioned variant (cond_type: shape)
   smoke.yaml                     fast end-to-end smoke-test config
+  morph_2seg.yaml  morph_6seg.yaml   morphology-generalization sweep (2/6-segment arms)
 src/shapediffuser/
   pcc_arm.py                     differentiable PCC arm (fast GT engine + grad-IK baseline)
   elastica_arm.py                PyElastica Cosserat arm (verified working, ~4s/sample, unbatched)
@@ -198,6 +216,7 @@ scripts/
   query_budget_study.py          candidate-selection-under-mismatch, budget sweep (--order pcc|diversity)
   query_budget_correlation.py    tests predictors of per-target selection benefit
   query_budget_ordering_paired.py  paired pcc-order vs diversity-order comparison (confirmed result)
+  morphology_sweep.py             confirms E1/E3/E4 generalize across 2/4/6-segment arms
 ```
 
 ## Quickstart
@@ -262,9 +281,14 @@ python scripts/query_budget_correlation.py --query_budget_results query_budget_r
 
 ## Open threads / next steps
 
-**Resolved:** ~~Smarter candidate ordering~~ - confirmed:
-diversity-ordering significantly beats PCC-confidence ordering at moderate
-budgets (m=8,16; see Results above and `query_budget_ordering_paired.json`).
+**Resolved:** ~~Smarter candidate ordering~~ - confirmed: diversity-ordering
+significantly beats PCC-confidence ordering at moderate budgets (m=8,16; see
+Results above and `query_budget_ordering_paired.json`).
+
+**Resolved:** ~~Morphology generalization~~ - confirmed: the core E1/E3/E4
+story holds (and the diffusion-vs-mlp gap grows) across 2/4/6-segment arms;
+see Results above and `morphology_sweep_results.json`. E2 was not
+regeneralized (would need per-morphology dbscan recalibration).
 
 Remaining, in rough priority order:
 
@@ -277,9 +301,5 @@ Remaining, in rough priority order:
    so adaptation informed by that (e.g. bias sampling toward whatever
    diversity-ordering is implicitly finding) may be the natural next step
    rather than a from-scratch direction.
-2. **Morphology generalization**: a small sweep over 2-3 different segment
-   counts/lengths within the same PCC-arm family (not a new topology, to
-   avoid overlapping with IKDiffuser's rigid-multi-arm structure-agnostic
-   framing).
-3. **Real hardware or a suitable public dataset**, if one turns up - would
+2. **Real hardware or a suitable public dataset**, if one turns up - would
    upgrade the sim-to-sim transfer story to genuine sim-to-real.
