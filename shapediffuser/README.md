@@ -209,6 +209,21 @@ need training-time exposure to Elastica-like variation (e.g. domain
 randomization spanning both simulators), a materially bigger undertaking than
 anything tested here.
 
+**Does training-time domain randomization help?
+(`configs/dr.yaml`, `PCCArm`'s per-sample `gain` override,
+`results_dr_pcc.json`, `transfer_study_dr_results.json`):** **no.**
+Randomizing `curvature_gain` ~ Uniform(15,35) per training sample (vs. the
+fixed 25.0), without conditioning the model on which gain applied, costs real
+accuracy on the standard PCC task (0.44mm -> 2.18mm, ~5x worse; success
+100% -> 95.5%) and produces zero measurable improvement on Elastica transfer
+(140.58mm -> 140.62mm - noise, not signal; success 0% -> 0%). This confirms,
+empirically, the concern raised when the experiment was scoped: the
+PCC/Elastica mismatch is directional/structural, not a magnitude difference,
+so randomizing *how much* the arm bends can't touch a mismatch in *which
+direction* it bends. This motivates mixing in real Elastica ground-truth
+data directly as the next, more principled step - it doesn't require the
+mismatch to be expressible as a simple parameter range.
+
 ## Novelty / related work
 
 Checked against the closest published work before committing to the
@@ -251,6 +266,7 @@ configs/
   shape.yaml                     shape-conditioned variant (cond_type: shape)
   smoke.yaml                     fast end-to-end smoke-test config
   morph_2seg.yaml  morph_6seg.yaml   morphology-generalization sweep (2/6-segment arms)
+  dr.yaml                        domain randomization (curvature_gain), tested and rejected
 src/shapediffuser/
   pcc_arm.py                     differentiable PCC arm (fast GT engine + grad-IK baseline)
   elastica_arm.py                PyElastica Cosserat arm (verified working, ~4s/sample, unbatched)
@@ -361,15 +377,32 @@ Mechanistic read: guidance concentrates candidates toward a good region;
 diversity-ordering explicitly spreads selection, working against that
 concentration rather than with it.
 
-Remaining, and now the clear ceiling on this whole thread: even combined,
-neither passive selection nor lightweight generation-time guidance recovers
-more than ~15% of the sim-to-sim gap - both operate within what a
-PCC-only-trained distribution can produce.
+**Resolved:** ~~Training-time domain randomization (curvature_gain)~~ -
+tested and rejected: randomizing `curvature_gain` per-sample during data
+generation (`configs/dr.yaml`, `data.curvature_gain_range`,
+`PCCArm.forward`'s optional per-sample `gain` override) costs real accuracy
+on the standard PCC task (tip err 0.44mm -> 2.18mm, ~5x worse; success
+100% -> 95.5%) and produces **zero** measurable improvement on Elastica
+transfer (140.58mm -> 140.62mm, noise not signal; success 0% -> 0%
+unchanged). Confirms the concern raised when this was scoped: the
+PCC/Elastica mismatch is structural/directional (established via the
+`torque_gain` calibration sweep earlier), not a magnitude/gain difference, so
+randomizing *how much* the arm bends doesn't touch the actual source of the
+mismatch. See `results_dr_pcc.json`, `transfer_study_dr_results.json`.
 
-1. **Training-time exposure to Elastica-like variation** (e.g. domain
-   randomization spanning both simulators, or direct fine-tuning on a modest
-   amount of Elastica data), not just inference-time selection/guidance - a
-   materially bigger undertaking than anything tested this session, likely
-   necessary to close the gap rather than just nibble at it.
+Remaining, and now the clear ceiling on this whole thread: neither passive
+selection, generation-time guidance, nor magnitude-only domain randomization
+meaningfully closes the sim-to-sim gap - all three operate within (or, for
+gain-DR, a simple reparameterization of) what a PCC-only-trained
+distribution can produce, none touch the *directional* nature of the actual
+mismatch.
+
+1. **Mix in real Elastica ground-truth data directly**, rather than
+   synthetic parameter randomization - doesn't require the mismatch to be
+   expressible as a simple parameter range, since it uses the real target
+   dynamics (however sparsely) instead of guessing at a distribution that
+   approximates them. The more principled option flagged when domain
+   randomization was scoped, now with direct empirical justification (DR's
+   clean failure) rather than just the prior theoretical concern.
 2. **Real hardware or a suitable public dataset**, if one turns up - would
    upgrade the sim-to-sim transfer story to genuine sim-to-real.
