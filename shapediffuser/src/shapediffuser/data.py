@@ -55,9 +55,14 @@ def generate_dataset(
     tips, shapes = [], []
     for i in range(0, n_samples, batch):
         qb = torch.as_tensor(q[i : i + batch], dtype=torch.float32)
-        gb = None if gains is None else torch.as_tensor(gains[i : i + batch], dtype=torch.float32)
         with torch.no_grad():
-            out = arm.forward(qb, gain=gb)
+            if gains is not None:
+                gb = torch.as_tensor(gains[i : i + batch], dtype=torch.float32)
+                out = arm.forward(qb, gain=gb)
+            else:
+                # don't pass gain= at all when unused, so arms without a
+                # gain kwarg (e.g. ElasticaArm) work identically to PCCArm
+                out = arm.forward(qb)
         bb = out["backbone"]  # (b, P, 3)
         idx = torch.linspace(0, bb.shape[1] - 1, shape_points).long()
         tips.append(out["tip"].cpu().numpy())
