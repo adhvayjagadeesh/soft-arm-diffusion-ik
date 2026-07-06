@@ -1,0 +1,118 @@
+{
+  "n_targets": 15,
+  "k": 16,
+  "guidance_scale": 0.3,
+  "budgets": {
+    "1": {
+      "unguided_pcc": {
+        "mean_mm": 163.4895477294922,
+        "sem_mm": 17.103584410677772,
+        "success_rate": 0.0
+      },
+      "unguided_diversity": {
+        "mean_mm": 163.4895477294922,
+        "sem_mm": 17.103584410677772,
+        "success_rate": 0.0
+      },
+      "guided_pcc": {
+        "mean_mm": 135.09559631347656,
+        "sem_mm": 17.01469655894696,
+        "success_rate": 0.0
+      },
+      "guided_diversity": {
+        "mean_mm": 135.09559631347656,
+        "sem_mm": 17.01469655894696,
+        "success_rate": 0.0
+      }
+    },
+    "2": {
+      "unguided_pcc": {
+        "mean_mm": 153.83258056640625,
+        "sem_mm": 17.159407470810027,
+        "success_rate": 0.0
+      },
+      "unguided_diversity": {
+        "mean_mm": 153.67376708984375,
+        "sem_mm": 18.129311964170103,
+        "success_rate": 0.0
+      },
+      "guided_pcc": {
+        "mean_mm": 132.9216766357422,
+        "sem_mm": 16.74829697051497,
+        "success_rate": 0.0
+      },
+      "guided_diversity": {
+        "mean_mm": 135.09559631347656,
+        "sem_mm": 17.01469655894696,
+        "success_rate": 0.0
+      }
+    },
+    "4": {
+      "unguided_pcc": {
+        "mean_mm": 147.89442443847656,
+        "sem_mm": 18.141168799477324,
+        "success_rate": 0.0
+      },
+      "unguided_diversity": {
+        "mean_mm": 145.14370727539062,
+        "sem_mm": 17.849136856664614,
+        "success_rate": 0.0
+      },
+      "guided_pcc": {
+        "mean_mm": 127.93757629394531,
+        "sem_mm": 17.471294047791453,
+        "success_rate": 0.0
+      },
+      "guided_diversity": {
+        "mean_mm": 129.50221252441406,
+        "sem_mm": 17.368853275822445,
+        "success_rate": 0.0
+      }
+    },
+    "8": {
+      "unguided_pcc": {
+        "mean_mm": 142.775390625,
+        "sem_mm": 19.081575992307357,
+        "success_rate": 0.0
+      },
+      "unguided_diversity": {
+        "mean_mm": 141.29261779785156,
+        "sem_mm": 17.916015002316747,
+        "success_rate": 0.0
+      },
+      "guided_pcc": {
+        "mean_mm": 127.15852355957031,
+        "sem_mm": 17.22839538064459,
+        "success_rate": 0.0
+      },
+      "guided_diversity": {
+        "mean_mm": 127.2380142211914,
+        "sem_mm": 17.31920979574647,
+        "success_rate": 0.0
+      }
+    },
+    "16": {
+      "unguided_pcc": {
+        "mean_mm": 138.9279327392578,
+        "sem_mm": 18.426375034641,
+        "success_rate": 0.0
+      },
+      "unguided_diversity": {
+        "mean_mm": 138.9279327392578,
+        "sem_mm": 18.426375034641,
+        "success_rate": 0.0
+      },
+      "guided_pcc": {
+        "mean_mm": 125.99561309814453,
+        "sem_mm": 17.226975081881253,
+        "success_rate": 0.0
+      },
+      "guided_diversity": {
+        "mean_mm": 125.99561309814453,
+        "sem_mm": 17.226975081881253,
+        "success_rate": 0.0
+      }
+    }
+  },
+  "wall_clock_s": 4219.617475986481
+}
