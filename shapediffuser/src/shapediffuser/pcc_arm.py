@@ -77,23 +77,33 @@ class PCCArm:
         return self
 
     # ------------------------------------------------------------------ #
-    def pressures_to_curvature(self, q: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        """q: (B, 3N) in [0,1] -> kx, ky each (B, N)."""
+    def pressures_to_curvature(
+        self, q: torch.Tensor, gain: torch.Tensor | None = None
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        """q: (B, 3N) in [0,1] -> kx, ky each (B, N).
+
+        gain: optional (B,) per-sample curvature_gain override, for domain
+        randomization during data generation (see data.generate_dataset's
+        curvature_gain_range). Defaults to self.curvature_gain (scalar,
+        identical to prior behavior) when not provided.
+        """
         B = q.shape[0]
         p = q.view(B, self.n_segments, 3)
-        g = self.curvature_gain
+        g = self.curvature_gain if gain is None else gain.to(q.device).view(B, 1)
         kx = g * (p[..., 0] - 0.5 * p[..., 1] - 0.5 * p[..., 2])
         ky = g * (0.8660254037844386 * (p[..., 1] - p[..., 2]))
         return kx, ky
 
-    def forward(self, q: torch.Tensor) -> dict:
+    def forward(self, q: torch.Tensor, gain: torch.Tensor | None = None) -> dict:
         """Batched FK. q: (B, 3N) -> dict with:
         backbone: (B, 1 + N*points_per_seg, 3) points from base to tip,
         tip:      (B, 3).
+        gain: optional (B,) per-sample curvature_gain override, see
+        pressures_to_curvature.
         """
         q = q.to(self.device)
         B = q.shape[0]
-        kx, ky = self.pressures_to_curvature(q)
+        kx, ky = self.pressures_to_curvature(q, gain=gain)
         kappa = torch.sqrt(kx**2 + ky**2 + 1e-12)  # (B, N)
         phi = torch.atan2(ky, kx)  # (B, N)
         L = self.seg_length

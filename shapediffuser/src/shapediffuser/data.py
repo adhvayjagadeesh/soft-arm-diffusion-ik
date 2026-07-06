@@ -27,7 +27,15 @@ def generate_dataset(
     shape_points: int = 8,
     batch: int = 8192,
     seed: int = 0,
+    curvature_gain_range: tuple[float, float] | None = None,
 ) -> dict:
+    """curvature_gain_range: if given, draws a fresh per-sample curvature_gain
+    ~ Uniform(*curvature_gain_range) instead of using arm.curvature_gain,
+    for domain-randomization training data. The model is not conditioned on
+    the sampled gain, so it can't tell which one applies to a given
+    sample - the point is to force actuations that work reasonably well
+    across the whole range, not to teach the model the range itself.
+    None (default) reproduces the exact prior fixed-gain behavior."""
     rng = np.random.default_rng(seed)
     if mode == "uniform":
         q = rng.uniform(0.0, 1.0, size=(n_samples, arm.q_dim))
@@ -40,11 +48,16 @@ def generate_dataset(
     else:
         raise ValueError(f"unknown exploration mode: {mode}")
 
+    gains = None
+    if curvature_gain_range is not None:
+        gains = rng.uniform(curvature_gain_range[0], curvature_gain_range[1], size=n_samples)
+
     tips, shapes = [], []
     for i in range(0, n_samples, batch):
         qb = torch.as_tensor(q[i : i + batch], dtype=torch.float32)
+        gb = None if gains is None else torch.as_tensor(gains[i : i + batch], dtype=torch.float32)
         with torch.no_grad():
-            out = arm.forward(qb)
+            out = arm.forward(qb, gain=gb)
         bb = out["backbone"]  # (b, P, 3)
         idx = torch.linspace(0, bb.shape[1] - 1, shape_points).long()
         tips.append(out["tip"].cpu().numpy())

@@ -24,15 +24,22 @@ def main():
     d = cfg["data"]
     os.makedirs(args.out, exist_ok=True)
 
+    gain_range = tuple(d["curvature_gain_range"]) if d.get("curvature_gain_range") else None
+    if gain_range:
+        print(f"Domain randomization: curvature_gain ~ Uniform{gain_range} per sample "
+              f"(nominal arm.curvature_gain={cfg['arm']['curvature_gain']} unused for generation)")
+
     print(f"Generating {d['n_train']} train samples ({d['mode']}) ...")
     train = generate_dataset(arm, d["n_train"], mode=d["mode"],
                              babble_step=d["babble_step"],
-                             shape_points=d["shape_points"], seed=d["seed"])
+                             shape_points=d["shape_points"], seed=d["seed"],
+                             curvature_gain_range=gain_range)
     np.savez_compressed(os.path.join(args.out, "train.npz"), **train)
 
     print(f"Generating {d['n_val']} val samples (uniform) ...")
     val = generate_dataset(arm, d["n_val"], mode="uniform",
-                           shape_points=d["shape_points"], seed=d["seed"] + 1)
+                           shape_points=d["shape_points"], seed=d["seed"] + 1,
+                           curvature_gain_range=gain_range)
     np.savez_compressed(os.path.join(args.out, "val.npz"), **val)
     print(f"Done. Wrote {args.out}/train.npz and {args.out}/val.npz")
 

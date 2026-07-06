@@ -3,11 +3,13 @@ __pycache__/
 *.pyc
 data/
 data_morph*seg/
+data_dr/
 checkpoints/
 checkpoints_seed*/
 checkpoints_scale*/
 checkpoints_shape*/
 checkpoints_morph*seg/
+checkpoints_dr/
 figures/
 results.json
 results_seed*.json
