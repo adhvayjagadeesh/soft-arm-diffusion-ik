@@ -186,8 +186,28 @@ unseen targets, so it's real adaptation, not memorization - but report this
 calibrated, not oversold: the effect is modest (~4% error reduction) and the
 significance margin is noticeably weaker than the diversity-ordering result
 (t=3.34 there vs. t=2.27 here). Worth replicating with more held-out targets
-before leaning on it hard in a writeup, and worth trying alongside
-diversity-ordering (apply both together) as a natural next step.
+before leaning on it hard in a writeup.
+
+**Do diversity-ordering and guided sampling combine?
+(`scripts/combined_adaptation_ordering.py`, same 15 held-out targets, full
+2x2 factorial from one paired Elastica pass per target):** **no.** Guided
+sampling's benefit replicates (126-135mm vs. 139-164mm at matching budgets),
+but diversity-ordering adds nothing on top of it - mildly *worse* at m=2
+(135.1 vs 132.9mm) and m=4 (129.5 vs 127.9mm), tied at m=8 and m=16.
+Mechanistic read: guided sampling *concentrates* candidates toward the
+predicted-good region (that's what gradient guidance does); diversity-
+ordering explicitly *spreads* selection across maximally different
+candidates. Once guidance has already concentrated the distribution, chasing
+diversity on top pulls toward outliers rather than reinforcing the good
+region - the two mechanisms are in tension, not complementary. Even the best
+single technique (guided sampling, ~126mm) recovers under 15% of the way from
+baseline (~164mm) toward the 5mm tolerance: **neither passive selection nor a
+small guidance signal substitutes for the model actually having seen the
+target dynamics** - both operate strictly within the space of candidates a
+PCC-only-trained distribution can produce. Closing the gap for real would
+need training-time exposure to Elastica-like variation (e.g. domain
+randomization spanning both simulators), a materially bigger undertaking than
+anything tested here.
 
 ## Novelty / related work
 
@@ -251,6 +271,7 @@ scripts/
   morphology_sweep.py             confirms E1/E3/E4 generalize across 2/4/6-segment arms
   train_transfer_regressor.py    fits the Elastica-error regressor used for guided sampling
   evaluate_adaptation.py         guided vs. unguided sampling on held-out targets (confirmed result)
+  combined_adaptation_ordering.py  2x2 factorial: do ordering + guidance stack? (no)
 ```
 
 ## Quickstart
@@ -332,10 +353,23 @@ modest (~4% error reduction) and the significance margin is weaker than the
 diversity-ordering result - flagged as "confirmed but modest," worth
 replicating with more held-out targets before leaning on it hard.
 
-Remaining:
+**Resolved:** ~~Combine diversity-ordering and transfer-guided sampling~~ -
+tested, they do **not** stack: guided sampling's benefit replicates but
+diversity-ordering adds nothing on top (mildly worse at m=2,4, tied at
+m=8,16) - see Results above and `combined_adaptation_ordering_results.json`.
+Mechanistic read: guidance concentrates candidates toward a good region;
+diversity-ordering explicitly spreads selection, working against that
+concentration rather than with it.
 
-1. **Combine diversity-ordering and transfer-guided sampling** - they're
-   different mechanisms (post-hoc selection vs. generation-time guidance)
-   with similar-magnitude individual effects; untested whether they stack.
+Remaining, and now the clear ceiling on this whole thread: even combined,
+neither passive selection nor lightweight generation-time guidance recovers
+more than ~15% of the sim-to-sim gap - both operate within what a
+PCC-only-trained distribution can produce.
+
+1. **Training-time exposure to Elastica-like variation** (e.g. domain
+   randomization spanning both simulators, or direct fine-tuning on a modest
+   amount of Elastica data), not just inference-time selection/guidance - a
+   materially bigger undertaking than anything tested this session, likely
+   necessary to close the gap rather than just nibble at it.
 2. **Real hardware or a suitable public dataset**, if one turns up - would
    upgrade the sim-to-sim transfer story to genuine sim-to-real.
