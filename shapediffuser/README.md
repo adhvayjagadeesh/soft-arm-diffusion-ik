@@ -224,6 +224,39 @@ direction* it bends. This motivates mixing in real Elastica ground-truth
 data directly as the next, more principled step - it doesn't require the
 mismatch to be expressible as a simple parameter range.
 
+**Does fine-tuning on real Elastica-simulated data help?
+(`scripts/generate_elastica_dataset.py`, 10,000 genuinely Elastica-simulated
+(actuation, tip) pairs - simulation, not real hardware, see honesty notes;
+`scripts/finetune_on_elastica.py`, heavy-oversampling fine-tune, prefixes
+500-10,000, `finetune_scaling_results.json`):** **partially - a real Pareto
+tradeoff, not a clean win.** Two clear, opposite monotonic trends as the
+fine-tuning prefix grows:
+
+| n (Elastica samples) | PCC err (mm) | PCC success | Elastica err (mm) | Elastica success |
+|---|---|---|---|---|
+| baseline (no fine-tune) | 0.44 | 100% | 140.6 | 0% |
+| 500 | 27.0 | 0.6% | 125.5 | 0% |
+| 1,000 | 53.1 | 0.4% | 111.3 | 0% |
+| 3,000 | 125.4 | 0% | 79.9 | 5% |
+| 5,000 | 130.8 | 0% | 71.6 | 5% |
+| 10,000 | 136.3 | 0% | **63.5** | **10%** |
+
+PCC accuracy collapses progressively worse with more fine-tune data (more
+exclusive-Elastica gradient steps = more forgetting of the original
+500k-sample training); Elastica transfer accuracy improves progressively
+with more fine-tune data - dropping from 140.6mm to 63.5mm (~55% reduction,
+the largest of any method tried) and reaching **10% success, the first
+nonzero transfer success anywhere this session** (diversity-ordering, guided
+sampling, and DR all stayed at exactly 0%). This confirms real Elastica data
+carries genuinely exploitable transfer signal, validating real-data mixing
+over synthetic randomization. But the current execution (heavy oversampling,
+zero PCC data mixed in during fine-tuning) is over-aggressive: it isn't
+adapting the model to handle both domains, it's overwriting it into a
+mediocre Elastica specialist that's lost general PCC capability entirely.
+The natural fix - mixing in some PCC data as regularization during
+fine-tuning - is now backed by strong evidence the underlying signal is
+worth preserving properly, rather than a guess.
+
 ## Novelty / related work
 
 Checked against the closest published work before committing to the
@@ -288,6 +321,8 @@ scripts/
   train_transfer_regressor.py    fits the Elastica-error regressor used for guided sampling
   evaluate_adaptation.py         guided vs. unguided sampling on held-out targets (confirmed result)
   combined_adaptation_ordering.py  2x2 factorial: do ordering + guidance stack? (no)
+  generate_elastica_dataset.py   checkpointed/resumable Elastica-simulated dataset generation
+  finetune_on_elastica.py        real-data fine-tuning scaling curve (partial win, Pareto tradeoff)
 ```
 
 ## Quickstart
@@ -397,12 +432,19 @@ gain-DR, a simple reparameterization of) what a PCC-only-trained
 distribution can produce, none touch the *directional* nature of the actual
 mismatch.
 
-1. **Mix in real Elastica ground-truth data directly**, rather than
-   synthetic parameter randomization - doesn't require the mismatch to be
-   expressible as a simple parameter range, since it uses the real target
-   dynamics (however sparsely) instead of guessing at a distribution that
-   approximates them. The more principled option flagged when domain
-   randomization was scoped, now with direct empirical justification (DR's
-   clean failure) rather than just the prior theoretical concern.
+**Resolved (partially):** ~~Mix in real Elastica ground-truth data directly~~
+- tested: real signal confirmed (140.6mm -> 63.5mm, first nonzero transfer
+success at 10,000 samples), but the heavy-oversampling execution catastrophically
+forgets PCC-domain accuracy in the process (0.44mm -> 136mm) - a genuine
+Pareto tradeoff, not a finished result. See Results above and
+`finetune_scaling_results.json`.
+
+Remaining:
+
+1. **Fine-tune with PCC data mixed in as regularization**, rather than
+   exclusively on Elastica data - now backed by direct evidence the real-data
+   signal is worth preserving properly (not a guess), the natural next step
+   to try to get the transfer improvement without the catastrophic forgetting
+   cost.
 2. **Real hardware or a suitable public dataset**, if one turns up - would
    upgrade the sim-to-sim transfer story to genuine sim-to-real.
