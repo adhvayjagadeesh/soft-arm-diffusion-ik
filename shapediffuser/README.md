@@ -275,11 +275,31 @@ catastrophic 136.3mm/0%), confirming the diagnosed causal mechanism was
 correct. But the 50/50 ratio **diluted almost all of the transfer signal**
 that made the unregularized result exciting: 145.3mm/5% is barely
 distinguishable from (arguably slightly worse than) the no-fine-tune
-baseline, a small fraction of the unregularized run's 63.5mm/10%. This
-establishes the PCC:Elastica mixing ratio as a real, tunable knob between
-two now well-characterized extremes, rather than proving a genuine
-middle-ground sweet spot exists - that requires testing an intermediate
-ratio (e.g. 10-25% PCC), not yet run.
+baseline, a small fraction of the unregularized run's 63.5mm/10%.
+
+**Is there a sweet spot? (third point at 20% PCC mix, completing the sweep):**
+**no - the curve is a cliff, not a slope.**
+
+| PCC mix | PCC err (mm) | PCC success | Elastica err (mm) | Elastica success |
+|---|---|---|---|---|
+| 0% (pure Elastica) | 136.3 | 0% | **63.5** | **10%** |
+| 20% | 12.9 | 50.2% | 147.3 | 5% |
+| 50% | 3.7 | 93.4% | 145.3 | 5% |
+
+PCC retention improves smoothly and monotonically with more mixing (136.3 ->
+12.9 -> 3.7mm). Elastica transfer does **not** degrade gracefully in step -
+it collapses almost entirely the instant *any* substantial PCC data is
+introduced: going from 0% to just 20% PCC already loses most of the transfer
+benefit (worse raw error than even the 50% point), then stays essentially
+flat from 20% to 50%. **Conclusion: retention and transfer are in sharp
+tension under per-batch data mixing, not on a smoothly interpolatable
+tradeoff** - the transfer signal needs training almost exclusively on
+Elastica data to manifest at all. A genuine middle ground, if one exists,
+would likely need a different regularization mechanism entirely (e.g.
+parameter-level constraints like elastic weight consolidation, or freezing
+specific layers) rather than further data-mixing-ratio tuning - a
+meaningfully bigger undertaking, left as future work rather than pursued
+further this session.
 
 ## Novelty / related work
 
@@ -464,19 +484,23 @@ forgets PCC-domain accuracy in the process (0.44mm -> 136mm) - a genuine
 Pareto tradeoff, not a finished result. See Results above and
 `finetune_scaling_results.json`.
 
-**Resolved (partially):** ~~Fine-tune with PCC data mixed in as
-regularization~~ - tested at a 50/50 ratio: solves forgetting decisively
-(3.74mm/93.4% PCC accuracy, near baseline) but dilutes almost all of the
-transfer signal (145.3mm/5% Elastica, barely above the no-fine-tune
-baseline). A real, tunable knob between two characterized extremes, not yet
-a demonstrated sweet spot. See Results above and
-`finetune_regularized_results.json`.
+**Resolved:** ~~Fine-tune with PCC data mixed in as regularization / find a
+mixing-ratio sweet spot~~ - characterized with three points (0%, 20%, 50%
+PCC mix): retention improves smoothly with more PCC data, but transfer
+collapses almost immediately past 0% rather than degrading gracefully - a
+cliff, not a slope. No sweet spot in per-batch data mixing; a genuine middle
+ground would need a different regularization mechanism entirely (see
+Results above). This closes out the real-data-mixing thread for this
+session with a precise, well-characterized answer rather than an open
+question.
 
 Remaining:
 
-1. **Try an intermediate PCC:Elastica mixing ratio** (e.g. 10-25% PCC,
-   between the tested 0% and 50% extremes) - the two data points collected
-   so far don't establish whether a genuine middle-ground sweet spot exists
-   or whether the tradeoff is roughly linear between them.
+1. **Parameter-level regularization** (e.g. elastic weight consolidation,
+   frozen layers) instead of data-mixing-ratio tuning, if the retention/
+   transfer tension is worth pursuing further - a meaningfully bigger
+   undertaking than anything in this session.
 2. **Real hardware or a suitable public dataset**, if one turns up - would
-   upgrade the sim-to-sim transfer story to genuine sim-to-real.
+   upgrade the sim-to-sim transfer story to genuine sim-to-real. This is now
+   the only item on this list not already investigated at least once this
+   session.
