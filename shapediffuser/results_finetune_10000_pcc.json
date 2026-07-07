@@ -1,0 +1,22 @@
+{
+  "diffusion": {
+    "accuracy": {
+      "tip_err_best_of_K_mm": 136.25863194465637,
+      "tip_err_single_mm": 178.13602089881897,
+      "success_rate_best_of_K": 0.0
+    },
+    "obstacle_task": {
+      "success_rate": 0.0
+    },
+    "timing": {
+      "ms_per_target_batchK": 26.740875095129013,
+      "K": 32,
+      "device": "cpu"
+    }
+  },
+  "grad_ik": {
+    "accuracy": {
+      "tip_err_best_mm": 0.6626070440325371
+    }
+  }
+}

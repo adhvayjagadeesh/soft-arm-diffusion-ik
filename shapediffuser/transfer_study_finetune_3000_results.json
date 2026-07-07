@@ -1,0 +1,11 @@
+{
+  "diffusion": {
+    "pcc_tip_err_best_of_K_mm": 146.50322450324893,
+    "pcc_success_rate_best_of_K": 0.0,
+    "elastica_tip_err_best_of_K_mm": 79.8662367858924,
+    "elastica_success_rate_best_of_K": 0.05,
+    "n_targets": 20,
+    "K": 8,
+    "wall_clock_s": 708.1690678596497
+  }
+}

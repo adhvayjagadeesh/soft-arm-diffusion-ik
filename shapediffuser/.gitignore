@@ -10,6 +10,7 @@ checkpoints_scale*/
 checkpoints_shape*/
 checkpoints_morph*seg/
 checkpoints_dr/
+checkpoints_finetune_*/
 figures/
 results.json
 results_seed*.json

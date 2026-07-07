@@ -1,0 +1,132 @@
+{
+  "500": {
+    "pcc": {
+      "accuracy": {
+        "tip_err_best_of_K_mm": 27.03883871436119,
+        "tip_err_single_mm": 105.87964951992035,
+        "success_rate_best_of_K": 0.005859375
+      },
+      "obstacle_task": {
+        "success_rate": 0.015
+      },
+      "timing": {
+        "ms_per_target_batchK": 31.22192621231079,
+        "K": 32,
+        "device": "cpu"
+      }
+    },
+    "transfer": {
+      "pcc_tip_err_best_of_K_mm": 38.01374305039644,
+      "pcc_success_rate_best_of_K": 0.0,
+      "elastica_tip_err_best_of_K_mm": 125.50487089902163,
+      "elastica_success_rate_best_of_K": 0.0,
+      "n_targets": 20,
+      "K": 8,
+      "wall_clock_s": 668.2573490142822
+    }
+  },
+  "1000": {
+    "pcc": {
+      "accuracy": {
+        "tip_err_best_of_K_mm": 53.13141271471977,
+        "tip_err_single_mm": 143.24337244033813,
+        "success_rate_best_of_K": 0.00390625
+      },
+      "obstacle_task": {
+        "success_rate": 0.0
+      },
+      "timing": {
+        "ms_per_target_batchK": 25.366924703121185,
+        "K": 32,
+        "device": "cpu"
+      }
+    },
+    "transfer": {
+      "pcc_tip_err_best_of_K_mm": 70.33504685387015,
+      "pcc_success_rate_best_of_K": 0.0,
+      "elastica_tip_err_best_of_K_mm": 111.3366643898189,
+      "elastica_success_rate_best_of_K": 0.0,
+      "n_targets": 20,
+      "K": 8,
+      "wall_clock_s": 660.8730227947235
+    }
+  },
+  "3000": {
+    "pcc": {
+      "accuracy": {
+        "tip_err_best_of_K_mm": 125.44843554496765,
+        "tip_err_single_mm": 181.06712400913239,
+        "success_rate_best_of_K": 0.0
+      },
+      "obstacle_task": {
+        "success_rate": 0.0
+      },
+      "timing": {
+        "ms_per_target_batchK": 29.276810586452484,
+        "K": 32,
+        "device": "cpu"
+      }
+    },
+    "transfer": {
+      "pcc_tip_err_best_of_K_mm": 146.50322450324893,
+      "pcc_success_rate_best_of_K": 0.0,
+      "elastica_tip_err_best_of_K_mm": 79.8662367858924,
+      "elastica_success_rate_best_of_K": 0.05,
+      "n_targets": 20,
+      "K": 8,
+      "wall_clock_s": 708.1690678596497
+    }
+  },
+  "5000": {
+    "pcc": {
+      "accuracy": {
+        "tip_err_best_of_K_mm": 130.759596824646,
+        "tip_err_single_mm": 180.69836497306824,
+        "success_rate_best_of_K": 0.0
+      },
+      "obstacle_task": {
+        "success_rate": 0.0
+      },
+      "timing": {
+        "ms_per_target_batchK": 30.485674738883972,
+        "K": 32,
+        "device": "cpu"
+      }
+    },
+    "transfer": {
+      "pcc_tip_err_best_of_K_mm": 145.9157481789589,
+      "pcc_success_rate_best_of_K": 0.0,
+      "elastica_tip_err_best_of_K_mm": 71.56425105058588,
+      "elastica_success_rate_best_of_K": 0.05,
+      "n_targets": 20,
+      "K": 8,
+      "wall_clock_s": 2073.442646741867
+    }
+  },
+  "10000": {
+    "pcc": {
+      "accuracy": {
+        "tip_err_best_of_K_mm": 136.25863194465637,
+        "tip_err_single_mm": 178.13602089881897,
+        "success_rate_best_of_K": 0.0
+      },
+      "obstacle_task": {
+        "success_rate": 0.0
+      },
+      "timing": {
+        "ms_per_target_batchK": 26.740875095129013,
+        "K": 32,
+        "device": "cpu"
+      }
+    },
+    "transfer": {
+      "pcc_tip_err_best_of_K_mm": 152.78129614889622,
+      "pcc_success_rate_best_of_K": 0.0,
+      "elastica_tip_err_best_of_K_mm": 63.47360918589402,
+      "elastica_success_rate_best_of_K": 0.1,
+      "n_targets": 20,
+      "K": 8,
+      "wall_clock_s": 978.2796401977539
+    }
+  }
+}
