@@ -257,6 +257,30 @@ The natural fix - mixing in some PCC data as regularization during
 fine-tuning - is now backed by strong evidence the underlying signal is
 worth preserving properly, rather than a guess.
 
+**Does mixing PCC data into fine-tuning escape the tradeoff?
+(`scripts/finetune_on_elastica_regularized.py`, 50/50 PCC:Elastica mix via a
+WeightedRandomSampler, n_elastica=10,000, same held-out seed as the
+unregularized comparison point):** **half yes, half no - a different point
+on the same tradeoff, not an escape from it.**
+
+| | PCC err (mm) | PCC success | Elastica err (mm) | Elastica success |
+|---|---|---|---|---|
+| no fine-tune (baseline) | 0.44 | 100% | 140.6 | 0% |
+| regularized (50/50) | 3.74 | 93.4% | 145.3 | 5% |
+| unregularized (pure Elastica) | 136.3 | 0% | **63.5** | **10%** |
+
+Mixing PCC data back in **solved the forgetting problem decisively**: PCC
+accuracy recovers to near-baseline (3.74mm/93.4% vs. the unregularized run's
+catastrophic 136.3mm/0%), confirming the diagnosed causal mechanism was
+correct. But the 50/50 ratio **diluted almost all of the transfer signal**
+that made the unregularized result exciting: 145.3mm/5% is barely
+distinguishable from (arguably slightly worse than) the no-fine-tune
+baseline, a small fraction of the unregularized run's 63.5mm/10%. This
+establishes the PCC:Elastica mixing ratio as a real, tunable knob between
+two now well-characterized extremes, rather than proving a genuine
+middle-ground sweet spot exists - that requires testing an intermediate
+ratio (e.g. 10-25% PCC), not yet run.
+
 ## Novelty / related work
 
 Checked against the closest published work before committing to the
@@ -323,6 +347,7 @@ scripts/
   combined_adaptation_ordering.py  2x2 factorial: do ordering + guidance stack? (no)
   generate_elastica_dataset.py   checkpointed/resumable Elastica-simulated dataset generation
   finetune_on_elastica.py        real-data fine-tuning scaling curve (partial win, Pareto tradeoff)
+  finetune_on_elastica_regularized.py  50/50 PCC-mix fine-tune (solves forgetting, dilutes signal)
 ```
 
 ## Quickstart
@@ -439,12 +464,19 @@ forgets PCC-domain accuracy in the process (0.44mm -> 136mm) - a genuine
 Pareto tradeoff, not a finished result. See Results above and
 `finetune_scaling_results.json`.
 
+**Resolved (partially):** ~~Fine-tune with PCC data mixed in as
+regularization~~ - tested at a 50/50 ratio: solves forgetting decisively
+(3.74mm/93.4% PCC accuracy, near baseline) but dilutes almost all of the
+transfer signal (145.3mm/5% Elastica, barely above the no-fine-tune
+baseline). A real, tunable knob between two characterized extremes, not yet
+a demonstrated sweet spot. See Results above and
+`finetune_regularized_results.json`.
+
 Remaining:
 
-1. **Fine-tune with PCC data mixed in as regularization**, rather than
-   exclusively on Elastica data - now backed by direct evidence the real-data
-   signal is worth preserving properly (not a guess), the natural next step
-   to try to get the transfer improvement without the catastrophic forgetting
-   cost.
+1. **Try an intermediate PCC:Elastica mixing ratio** (e.g. 10-25% PCC,
+   between the tested 0% and 50% extremes) - the two data points collected
+   so far don't establish whether a genuine middle-ground sweet spot exists
+   or whether the tradeoff is roughly linear between them.
 2. **Real hardware or a suitable public dataset**, if one turns up - would
    upgrade the sim-to-sim transfer story to genuine sim-to-real.
