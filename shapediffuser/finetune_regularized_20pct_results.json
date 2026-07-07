@@ -1,5 +1,7 @@
 {
-  "diffusion": {
+  "pcc_mix_frac": 0.2,
+  "n_elastica": 10000,
+  "pcc": {
     "accuracy": {
       "tip_err_best_of_K_mm": 12.851621955633163,
       "tip_err_single_mm": 44.621750712394714,
@@ -14,9 +16,13 @@
       "device": "cpu"
     }
   },
-  "grad_ik": {
-    "accuracy": {
-      "tip_err_best_mm": 0.6691435326784401
-    }
+  "transfer": {
+    "pcc_tip_err_best_of_K_mm": 12.197508360259235,
+    "pcc_success_rate_best_of_K": 0.5,
+    "elastica_tip_err_best_of_K_mm": 147.2467271669302,
+    "elastica_success_rate_best_of_K": 0.05,
+    "n_targets": 20,
+    "K": 8,
+    "wall_clock_s": 630.8691718578339
   }
 }
