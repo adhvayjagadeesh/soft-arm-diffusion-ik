@@ -124,11 +124,14 @@ def main():
     print(f"wrote {ckpt_path}", flush=True)
 
     py = sys.executable
-    pcc_out = "results_finetune_regularized_pcc.json"
+    # derive intermediate filenames from --out so sequential runs with distinct
+    # --out values don't overwrite each other's per-stage files
+    out_base = os.path.splitext(args.out)[0]
+    pcc_out = f"{out_base}_pcc.json"
     subprocess.run([py, "scripts/evaluate.py", "--config", args.config, "--ckpt_dir", args.ckpt_dir,
                     "--out", pcc_out, "--skip_modes"], check=True)
 
-    transfer_out = "transfer_study_finetune_regularized_results.json"
+    transfer_out = f"{out_base}_transfer.json"
     subprocess.run([py, "scripts/transfer_study.py", "--config", args.config, "--ckpt_dir", args.ckpt_dir,
                     "--n_targets", str(args.n_targets), "--k", str(args.k),
                     "--seed", str(args.held_out_seed), "--out", transfer_out], check=True)
