@@ -20,3 +20,9 @@ results_morph*seg.json
 # per-stage intermediates; the finetune_grid_s*_f*.json aggregates are the committed record
 finetune_grid_*_pcc.json
 finetune_grid_*_transfer.json
+# LaTeX build artifacts
+paper/*.aux
+paper/*.log
+paper/*.out
+paper/*.blg
+paper/*.bbl
