@@ -88,14 +88,16 @@ worse** (shape-conditioned). This isolates *why* diffusion helps (resolving
 redundancy) rather than just showing it wins everywhere.
 
 **PCC->Elastica sim-to-sim transfer (`scripts/transfer_study.py`,
-`elastica_arm.py` verified working against pyelastica 1.0.0):** diffusion's
-near-perfect PCC self-consistency (0.44mm, 100% success) collapses entirely
-when the same actuations are executed on the higher-fidelity Cosserat-rod
-simulator (140.6mm, **0% success**); mlp collapses similarly (13.8mm ->
-164.5mm). Calibration checks ruled out a simple unit/gain mismatch between the
-simulators - see `transfer_study_results.json` and the commit history for the
-`torque_gain` sweep. The learned inverse map is entirely simulator-specific
-and does not transfer.
+`elastica_arm.py` verified working against pyelastica 1.0.0; 3 seeds via
+`transfer_study_seed{0,1,2}_results.json`, added for the RA-L submission):**
+diffusion's near-perfect PCC self-consistency (0.67 +/- 0.03mm, 100% success)
+collapses entirely when the same actuations are executed on the
+higher-fidelity Cosserat-rod simulator (139.9 +/- 1.8mm, **0% success on
+every seed**); mlp collapses similarly (13.8mm -> 164.4 +/- 0.03mm).
+Calibration checks ruled out a simple unit/gain mismatch between the
+simulators - see the commit history for the `torque_gain` sweep. The learned
+inverse map is entirely simulator-specific and does not transfer, and this is
+seed-stable, not a training fluke.
 
 **Query-budget candidate selection (`scripts/query_budget_study.py`, n=45
 targets, `query_budget_results_n45.json`):** does having K=32 diverse
@@ -277,29 +279,36 @@ that made the unregularized result exciting: 145.3mm/5% is barely
 distinguishable from (arguably slightly worse than) the no-fine-tune
 baseline, a small fraction of the unregularized run's 63.5mm/10%.
 
-**Is there a sweet spot? (third point at 20% PCC mix, completing the sweep):**
-**no - the curve is a cliff, not a slope.**
+**Is there a sweet spot? (third point at 20% PCC mix, then the full grid
+rerun at 3 seeds x 3 ratios for the RA-L submission - all conditions through
+the same script on `checkpoints_seed0/1/2`; `finetune_grid_summary.json`):**
+**no - the curve is a cliff, not a slope, and this is seed-stable.**
+
+Mean +/- std over 3 seeds:
 
 | PCC mix | PCC err (mm) | PCC success | Elastica err (mm) | Elastica success |
 |---|---|---|---|---|
-| 0% (pure Elastica) | 136.3 | 0% | **63.5** | **10%** |
-| 20% | 12.9 | 50.2% | 147.3 | 5% |
-| 50% | 3.7 | 93.4% | 145.3 | 5% |
+| 0% (pure Elastica) | 133.4 +/- 1.2 | 0% | **67.1 +/- 1.0** | **10.0 +/- 0.0%** |
+| 20% | 11.6 +/- 0.3 | 50.8 +/- 3.7% | 148.0 +/- 1.6 | 10.0 +/- 0.0% |
+| 50% | 3.0 +/- 0.4 | 95.5 +/- 0.6% | 152.3 +/- 0.4 | 3.3 +/- 2.4% |
 
-PCC retention improves smoothly and monotonically with more mixing (136.3 ->
-12.9 -> 3.7mm). Elastica transfer does **not** degrade gracefully in step -
-it collapses almost entirely the instant *any* substantial PCC data is
-introduced: going from 0% to just 20% PCC already loses most of the transfer
-benefit (worse raw error than even the 50% point), then stays essentially
-flat from 20% to 50%. **Conclusion: retention and transfer are in sharp
-tension under per-batch data mixing, not on a smoothly interpolatable
-tradeoff** - the transfer signal needs training almost exclusively on
-Elastica data to manifest at all. A genuine middle ground, if one exists,
-would likely need a different regularization mechanism entirely (e.g.
-parameter-level constraints like elastic weight consolidation, or freezing
-specific layers) rather than further data-mixing-ratio tuning - a
-meaningfully bigger undertaking, left as future work rather than pursued
-further this session.
+PCC retention improves smoothly and monotonically with more mixing (133.4 ->
+11.6 -> 3.0mm). Elastica transfer does **not** degrade gracefully in step -
+mean transfer error collapses almost entirely the instant *any* substantial
+PCC data is introduced (67mm -> 148mm at just 20%, essentially flat from 20%
+to 50%, and worse than the 139.9mm no-fine-tune baseline). One metric nuance
+worth knowing: at 20% mix the *binary* success rate stays at 10% (2/20
+targets on every seed), same as the 0% mix - with n_targets=20 the success
+metric has 5% granularity and is the noisier lens; the mean-error curve is
+the reliable one and shows the cliff unambiguously. **Conclusion: retention
+and transfer are in sharp tension under per-batch data mixing, not on a
+smoothly interpolatable tradeoff** - the transfer signal needs training
+almost exclusively on Elastica data to manifest at all. A genuine middle
+ground, if one exists, would likely need a different regularization
+mechanism entirely (e.g. parameter-level constraints like elastic weight
+consolidation, or freezing specific layers) rather than further
+data-mixing-ratio tuning - a meaningfully bigger undertaking, left as future
+work rather than pursued further this session.
 
 ## Novelty / related work
 
