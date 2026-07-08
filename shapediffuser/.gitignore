@@ -16,3 +16,6 @@ results.json
 results_seed*.json
 results_shape_seed*.json
 results_morph*seg.json
+# per-stage intermediates; the finetune_grid_s*_f*.json aggregates are the committed record
+finetune_grid_*_pcc.json
+finetune_grid_*_transfer.json

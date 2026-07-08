@@ -1,0 +1,20 @@
+{
+  "diffusion": {
+    "pcc_tip_err_best_of_K_mm": 0.6371566239977255,
+    "pcc_success_rate_best_of_K": 1.0,
+    "elastica_tip_err_best_of_K_mm": 137.42299284785986,
+    "elastica_success_rate_best_of_K": 0.0,
+    "n_targets": 20,
+    "K": 8,
+    "wall_clock_s": 746.3803172111511
+  },
+  "mlp": {
+    "pcc_tip_err_best_of_K_mm": 13.800434698350728,
+    "pcc_success_rate_best_of_K": 0.0,
+    "elastica_tip_err_best_of_K_mm": 164.410712569952,
+    "elastica_success_rate_best_of_K": 0.0,
+    "n_targets": 20,
+    "K": 8,
+    "wall_clock_s": 760.1888830661774
+  }
+}

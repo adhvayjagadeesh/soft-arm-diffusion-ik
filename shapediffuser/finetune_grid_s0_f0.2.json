@@ -1,0 +1,28 @@
+{
+  "pcc_mix_frac": 0.2,
+  "n_elastica": 10000,
+  "pcc": {
+    "accuracy": {
+      "tip_err_best_of_K_mm": 11.189164593815804,
+      "tip_err_single_mm": 40.879987180233,
+      "success_rate_best_of_K": 0.55859375
+    },
+    "obstacle_task": {
+      "success_rate": 0.53
+    },
+    "timing": {
+      "ms_per_target_batchK": 21.102875471115112,
+      "K": 32,
+      "device": "cpu"
+    }
+  },
+  "transfer": {
+    "pcc_tip_err_best_of_K_mm": 13.178387330844998,
+    "pcc_success_rate_best_of_K": 0.3,
+    "elastica_tip_err_best_of_K_mm": 148.8685169373639,
+    "elastica_success_rate_best_of_K": 0.1,
+    "n_targets": 20,
+    "K": 8,
+    "wall_clock_s": 623.357880115509
+  }
+}
