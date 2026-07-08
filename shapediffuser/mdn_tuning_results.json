@@ -1,0 +1,78 @@
+{
+  "4": {
+    "accuracy": {
+      "tip_err_best_of_K_mm": 18.662165850400925,
+      "tip_err_single_mm": 90.68157523870468,
+      "success_rate_best_of_K": 0.013671875
+    },
+    "multimodality": {
+      "mode_recall": 0.0,
+      "diversity": 0.0
+    },
+    "obstacle_task": {
+      "success_rate": 0.01
+    },
+    "timing": {
+      "ms_per_target_batchK": 0.016670674085617065,
+      "K": 32,
+      "device": "cpu"
+    }
+  },
+  "8": {
+    "accuracy": {
+      "tip_err_best_of_K_mm": 17.325472086668015,
+      "tip_err_single_mm": 82.02576637268066,
+      "success_rate_best_of_K": 0.033203125
+    },
+    "multimodality": {
+      "mode_recall": 0.0,
+      "diversity": 0.0
+    },
+    "obstacle_task": {
+      "success_rate": 0.015
+    },
+    "timing": {
+      "ms_per_target_batchK": 0.015325844287872314,
+      "K": 32,
+      "device": "cpu"
+    }
+  },
+  "16": {
+    "accuracy": {
+      "tip_err_best_of_K_mm": 15.160520561039448,
+      "tip_err_single_mm": 75.97050815820694,
+      "success_rate_best_of_K": 0.044921875
+    },
+    "multimodality": {
+      "mode_recall": 0.0,
+      "diversity": 0.0
+    },
+    "obstacle_task": {
+      "success_rate": 0.045
+    },
+    "timing": {
+      "ms_per_target_batchK": 0.021126121282577515,
+      "K": 32,
+      "device": "cpu"
+    }
+  },
+  "32": {
+    "accuracy": {
+      "tip_err_best_of_K_mm": 14.819664880633354,
+      "tip_err_single_mm": 71.76505029201508,
+      "success_rate_best_of_K": 0.029296875
+    },
+    "multimodality": {
+      "mode_recall": 0.0,
+      "diversity": 0.0
+    },
+    "obstacle_task": {
+      "success_rate": 0.035
+    },
+    "timing": {
+      "ms_per_target_batchK": 0.011514872312545776,
+      "K": 32,
+      "device": "cpu"
+    }
+  }
+}

@@ -222,7 +222,10 @@ MLP because it is deterministic, and the MDN not through classic component
 collapse (its mixture weights stay near-uniform and its component means
 remain spread) but because no component is accurate enough: mode recall and
 diversity are computed over \emph{successful} samples only, and the MDN
-almost never produces one. \textbf{E3 (downstream value):} when success requires \emph{any} of
+almost never produces one. This is not a tuning artifact: sweeping the
+MDN's component count over $\{4,8,16,32\}$ improves best-of-$K$ error only
+from $18.7$ to $14.8\,$mm---never surpassing the plain MLP---and mode recall
+remains exactly zero at every setting. \textbf{E3 (downstream value):} when success requires \emph{any} of
 $K$ samples to be both accurate and collision-free among random obstacles,
 diffusion succeeds on $97.8\%$ of trials vs.\ $4.0\%$ (MLP)---redundancy is
 only exploitable if the model can represent it. \textbf{E4 (cost):}

@@ -58,6 +58,17 @@ success / 0.86 recall). Accuracy and recall saturate by ~20 DDIM steps (50-200
 steps add cost with no benefit) - default dropped from 50->20 for a ~3x
 inference speedup (85ms -> 27.5ms/target), verified with a full rerun.
 
+**MDN baseline fairness (`scripts/mdn_tuning_sweep.py`,
+`mdn_tuning_results.json`):** sweeping the MDN's component count over
+{4, 8, 16, 32} improves best-of-K error only from 18.7 to 14.8mm (never
+surpassing the plain MLP's 13.4mm) and mode recall stays **exactly zero at
+every setting** - the baseline's failure is not an under-tuning artifact.
+Also verified against the trained checkpoint: the MDN does *not* suffer
+classic component collapse (mixture weights near-uniform, ~7.8 effective
+components of 8; component means spread ~13.7 apart in curvature space) -
+its components are diverse but none is accurate enough to produce successful
+samples, which is what mode recall counts.
+
 **Dataset-size scaling (`scripts/scale_ablation.py`, diffusion only):**
 
 | n_train | 5,000 | 20,000 | 50,000 | 100,000 | 200,000 | 500,000 |

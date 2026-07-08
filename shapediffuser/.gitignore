@@ -26,3 +26,6 @@ paper/*.log
 paper/*.out
 paper/*.blg
 paper/*.bbl
+# MDN tuning sweep per-k artifacts; mdn_tuning_results.json is the committed record
+checkpoints_mdn_k*/
+results_mdn_k*.json
