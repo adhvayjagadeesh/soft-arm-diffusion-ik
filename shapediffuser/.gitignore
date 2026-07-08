@@ -11,7 +11,8 @@ checkpoints_shape*/
 checkpoints_morph*seg/
 checkpoints_dr/
 checkpoints_finetune_*/
-figures/
+# root-anchored: ignores working figures/ but not paper/figures/ (publication assets)
+/figures/
 results.json
 results_seed*.json
 results_shape_seed*.json
