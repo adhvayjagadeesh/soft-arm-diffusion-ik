@@ -42,18 +42,18 @@ baseline where redundancy is absent and dominates where it is present
 $97.8\%$ vs.\ $4.0\%$; three seeds). Two controlled manipulations show the
 advantage is specifically a redundancy effect: conditioning on the whole arm
 shape instead of the tip collapses sampled diversity by ${\sim}85\times$ and
-shrinks the baseline's disadvantage from ${\sim}58\times$ to ${\sim}3\times$,
+shrinks the baseline's disadvantage from ${\sim}30\times$ to ${\sim}3\times$,
 while increasing the number of segments widens the gap. However, when
 actuations from the PCC-trained model are executed on a high-fidelity
 Cosserat-rod simulator, accuracy collapses on every seed
 ($0.67\,$mm $\rightarrow 139.9\,$mm, $0\%$ success): the learned inverse map
 is simulator-specific. We characterize what recovers this loss: candidate
 selection under a query budget helps but is bounded; a diversity-aware query
-order provably beats a confidence order (paired $t{=}3.3$); guidance-based
-adaptation generalizes but is modest; gain-domain-randomization fails
-entirely; and fine-tuning on target-domain data reveals a sharp
+order significantly outperforms a confidence order (paired $t{=}3.3$);
+guidance-based adaptation generalizes but is modest; gain-domain-randomization
+fails entirely; and fine-tuning on target-domain data reveals a sharp
 retention--transfer cliff with no data-mixing sweet spot. All code, data, and
-per-experiment results are released.
+per-experiment result files are made available.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -104,13 +104,14 @@ Our contributions:
   redundancy---conditioning on the whole body shape, and varying the number
   of segments---show the advantage is specifically redundancy resolution,
   not generic model capacity (Sec.~\ref{sec:mechanism}).
-  \item \textbf{A transfer study with teeth.} The learned inverse map
-  collapses under simulator change on every seed. We quantify the recovery
-  achievable by inference-time selection and guidance, prove a diversity-aware
-  query ordering beats the obvious confidence ordering (paired
-  $t{=}3.3$, $p{\approx}0.002$), show gain-domain-randomization achieves
-  nothing, and map a sharp retention--transfer cliff for target-domain
-  fine-tuning (Sec.~\ref{sec:transfer}).
+  \item \textbf{A quantified transfer collapse---and what recovers it.} The
+  learned inverse map collapses under simulator change on every seed. We
+  quantify the recovery achievable by inference-time selection and guidance,
+  show a diversity-aware query ordering significantly outperforms the obvious
+  confidence ordering (paired $t{=}3.3$, $p{\approx}0.002$), show
+  gain-domain-randomization achieves nothing, and map a sharp
+  retention--transfer cliff for target-domain fine-tuning
+  (Sec.~\ref{sec:transfer}).
 \end{enumerate}
 Negative and bounded results are reported with the same prominence as
 positive ones; Sec.~\ref{sec:limitations} states the limitations explicitly.
@@ -124,7 +125,7 @@ constant-curvature kinematics underlying our fast simulator are reviewed
 in~\cite{webster2010design}, and STIFF-FLOP-style pneumatic arms motivate the
 three-chamber actuation model~\cite{cianchetti2014soft}. Mixture density
 networks~\cite{bishop1994mixture} are the classical answer to multimodal
-regression and serve as our stronger baseline.
+regression and serve as the classical multimodal baseline.
 
 \textbf{Diffusion models for robots.} Denoising diffusion
 models~\cite{ho2020denoising} with DDIM sampling~\cite{song2021denoising} and
@@ -162,10 +163,12 @@ residual MLP denoiser (six FiLM-conditioned blocks, width 512) trained as a
 DDPM ($T{=}1000$, cosine schedule) with classifier-free guidance
 (condition dropout $0.1$); sampling uses DDIM. Ablations
 (Sec.~\ref{sec:core}) fix guidance weight $1.5$ and $20$ DDIM steps.
-Baselines: an MLP regressor and an MDN ($K{=}8$ components), matched in
-width. Unless stated otherwise we sample $K{=}32$ candidates per target and
-report best-of-$K$; success means tip error under $5\,$mm ($2\%$ of arm
-length).
+Baselines: an MLP regressor and an MDN (eight mixture components), matched
+in width. Unless stated otherwise we sample $K{=}32$ candidates per target
+and report best-of-$K$; success means tip error under $5\,$mm ($2\%$ of arm
+length). The obstacle task (E3) runs 200 trials, each placing three random
+spherical obstacles (radius $2\,$cm) in the workspace; success requires any
+of the $K$ samples to be simultaneously accurate and collision-free.
 
 \textbf{Ground-truth modes.} For evaluation targets we enumerate the true IK
 solution set by a $2\times10^6$-sample sweep, keeping actuations whose tip
@@ -189,7 +192,8 @@ than a scale mismatch: no gain setting aligns the two workspaces.
 \label{sec:core}
 
 \begin{table}[t]
-\caption{Core comparison on the PCC arm (mean $\pm$ std, 3 seeds; $K{=}32$).}
+\caption{Core comparison on the PCC arm (mean $\pm$ std, 3 seeds; $K{=}32$).
+Mode recall and diversity are computed over successful samples only.}
 \label{tab:core}
 \centering
 \footnotesize
@@ -214,8 +218,11 @@ $100\%$ success; the deterministic MLP, structurally limited to the
 conditional mean, plateaus at $13.4\,$mm, and the MDN does not improve on it.
 \textbf{E2 (multimodality):} against enumerated ground-truth solution sets,
 diffusion recovers $0.84\pm0.03$ of modes; both baselines recover none---the
-MLP because it is deterministic, the MDN because its components collapse in
-training. \textbf{E3 (downstream value):} when success requires \emph{any} of
+MLP because it is deterministic, and the MDN not through classic component
+collapse (its mixture weights stay near-uniform and its component means
+remain spread) but because no component is accurate enough: mode recall and
+diversity are computed over \emph{successful} samples only, and the MDN
+almost never produces one. \textbf{E3 (downstream value):} when success requires \emph{any} of
 $K$ samples to be both accurate and collision-free among random obstacles,
 diffusion succeeds on $97.8\%$ of trials vs.\ $4.0\%$ (MLP)---redundancy is
 only exploitable if the model can represent it. \textbf{E4 (cost):}
@@ -260,7 +267,7 @@ models on the full 24-D body shape (eight backbone points) instead of the
 3-D tip pins down almost the entire configuration. Diffusion's sampled
 diversity collapses from $28.16\pm0.22$ to $0.346\pm0.022$
 (${\sim}85\times$), and the MLP's accuracy disadvantage shrinks from
-${\sim}58\times$ ($13.4$ vs.\ $0.44\,$mm) to ${\sim}3\times$ ($0.49$ vs.\
+${\sim}30\times$ ($13.4$ vs.\ $0.44\,$mm) to ${\sim}3\times$ ($0.49$ vs.\
 $0.16\,$mm), with both models at $100\%$ success (3 seeds). When there is
 one answer, a deterministic regressor is nearly as good; diffusion's edge
 is specifically the multimodal case.
@@ -393,7 +400,9 @@ domain, not a validated model of a specific physical arm. (3)
 \textbf{Statistical coverage is uneven.} Core results, the shape-conditioning
 study, the baseline transfer collapse, and the fine-tuning grid carry
 three-seed statistics; the query-budget, ordering, and guidance experiments
-use one trained model (with within-experiment pairing across 15--45 targets).
+use one trained model (with within-experiment pairing across 15--45 targets),
+and the hyperparameter, dataset-size, and morphology studies are likewise
+single-seed.
 (4) \textbf{Mode-enumeration hyperparameters} were calibrated for the
 four-segment arm; morphology results therefore report accuracy and
 obstacle-task metrics only. (5) \textbf{Success-rate granularity} in transfer

@@ -83,8 +83,9 @@ This is the project's cleanest mechanistic result: conditioning on the full
 diversity by **~85x** relative to tip-conditioning (28.16 -> 0.35), because
 specifying the whole shape removes almost all of the actuation redundancy that
 motivates diffusion in the first place. Correspondingly, mlp's disadvantage
-shrinks from **~58x worse** than diffusion (tip-conditioned) to only **~3x
-worse** (shape-conditioned). This isolates *why* diffusion helps (resolving
+shrinks from **~30x worse** than diffusion (tip-conditioned: 13.36 vs
+0.44mm, 3-seed numbers; an earlier single-seed comparison had put this at
+~58x) to only **~3x worse** (shape-conditioned). This isolates *why* diffusion helps (resolving
 redundancy) rather than just showing it wins everywhere.
 
 **PCC->Elastica sim-to-sim transfer (`scripts/transfer_study.py`,
