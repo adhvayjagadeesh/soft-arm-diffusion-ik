@@ -56,7 +56,9 @@ advantage survive a change of dynamics model? On a piecewise-constant-curvature
 (PCC) pneumatic arm, a conditional diffusion model matches a deterministic
 baseline where redundancy is absent and dominates where it is present
 (mode recall $0.84\pm0.03$ vs.\ exactly $0$; obstacle-avoidance success
-$97.8\%$ vs.\ $4.0\%$; three seeds). Two controlled manipulations show the
+$97.8\%$ vs.\ $4.0\%$; three seeds), and matches a strong optimization-based
+solver on accuracy at a tenth of its query cost without needing the
+simulator at query time. Two controlled manipulations show the
 advantage is specifically a redundancy effect: conditioning on the whole arm
 shape instead of the tip collapses sampled diversity by ${\sim}85\times$ and
 shrinks the baseline's disadvantage from ${\sim}30\times$ to ${\sim}3\times$,
@@ -114,10 +116,12 @@ zhang2019modeling}) of the same arm as the high-fidelity evaluation domain.
 Our contributions:
 \begin{enumerate}
   \item \textbf{A validated advantage.} With three-seed statistics, diffusion
-  IK matches or beats MLP and mixture-density-network (MDN)
-  baselines on accuracy and recovers $0.84\pm0.03$ of ground-truth IK modes
-  where deterministic baselines structurally recover none, translating into a
-  $97.8\%$ vs.\ $4.0\%$ obstacle-avoidance gap (Sec.~\ref{sec:core}).
+  IK dominates learned MLP and mixture-density-network (MDN) baselines,
+  recovers $0.84\pm0.03$ of ground-truth IK modes where they structurally
+  recover none, and matches a classical random-restart optimization solver
+  on accuracy at a tenth of its query cost without simulator access at query
+  time---translating into a $97.8\%$ vs.\ $4.0\%$ obstacle-avoidance gap
+  over the learned baselines (Sec.~\ref{sec:core}).
   \item \textbf{The mechanism, isolated.} Two controlled manipulations of
   redundancy---conditioning on the whole body shape, and varying the number
   of segments---show the advantage is specifically redundancy resolution,
@@ -136,14 +140,18 @@ positive ones; Sec.~\ref{sec:limitations} states the limitations explicitly.
 
 \section{Related Work}
 
-\textbf{Learned IK for continuum arms.} Classic approaches learn a
-deterministic map from workspace targets to actuations with neural networks
-trained on motor-babbling data~\cite{giorelli2015neural}; the
-constant-curvature kinematics underlying our fast simulator are reviewed
-in~\cite{webster2010design}, and STIFF-FLOP-style pneumatic arms motivate the
-three-chamber actuation model~\cite{cianchetti2014soft}. Mixture density
+\textbf{IK for continuum arms.} Non-learned approaches solve continuum IK by
+optimization through a model at query time: Jacobian-based schemes for
+nonconstant-curvature arms~\cite{giorelli2015neural} and real-time FEM
+inversion~\cite{duriez2013control}; the constant-curvature kinematics
+underlying our fast simulator are reviewed in~\cite{webster2010design}, and
+STIFF-FLOP-style pneumatic arms motivate the three-chamber actuation
+model~\cite{cianchetti2014soft}. We include an optimization-based baseline
+of this family (random-restart gradient IK through the differentiable
+model). Learned approaches fit a deterministic target-to-actuation map on
+motor-babbling data~\cite{giorelli2015neural}; mixture density
 networks~\cite{bishop1994mixture} are the classical answer to multimodal
-regression and serve as the classical multimodal baseline.
+regression and serve as the learned multimodal baseline.
 
 \textbf{Diffusion models for robots.} Denoising diffusion
 models~\cite{ho2020denoising} with DDIM sampling~\cite{song2021denoising} and
@@ -182,9 +190,11 @@ DDPM ($T{=}1000$, cosine schedule) with classifier-free guidance
 (condition dropout $0.1$); sampling uses DDIM. Ablations
 (Sec.~\ref{sec:core}) fix guidance weight $1.5$ and $20$ DDIM steps.
 Baselines: an MLP regressor and an MDN (eight mixture components), matched
-in width. Unless stated otherwise we sample $K{=}32$ candidates per target
-and report best-of-$K$; success means tip error under $5\,$mm ($2\%$ of arm
-length). The obstacle task (E3) runs 200 trials, each placing three random
+in width, plus a classical optimization-based reference---gradient-descent
+IK through the differentiable PCC model from 32 random restarts (Adam, 300
+iterations), denoted grad-IK. Unless stated otherwise we sample $K{=}32$
+candidates per target and report best-of-$K$; success means tip error under
+$5\,$mm ($2\%$ of arm length). The obstacle task (E3) runs 200 trials, each placing three random
 spherical obstacles (radius $2\,$cm) in the workspace; success requires any
 of the $K$ samples to be simultaneously accurate and collision-free.
 
@@ -216,21 +226,23 @@ rather than a scale mismatch: no gain setting aligns the two workspaces.
 
 \begin{table}[t]
 \caption{Core comparison on the PCC arm (mean $\pm$ std, 3 seeds; $K{=}32$).
-Mode recall and diversity are computed over successful samples only.}
+Mode recall and diversity are computed over successful samples only.
+grad-IK is a single optimization run per target (no training, hence no
+seeds) and requires the differentiable simulator at query time.}
 \label{tab:core}
 \centering
-\footnotesize
-\setlength{\tabcolsep}{2.5pt}
-\begin{tabular}{lccc}
+\scriptsize
+\setlength{\tabcolsep}{2.2pt}
+\begin{tabular}{lcccc}
 \toprule
- & Diffusion & MLP & MDN \\
+ & Diffusion & grad-IK & MLP & MDN \\
 \midrule
-Tip error, best-of-$K$ (mm) & $\mathbf{0.44\pm0.03}$ & $13.36\pm0.03$ & $17.31\pm0.15$ \\
-Success @ 5 mm & $\mathbf{1.00}$ & $0.060$ & $0.027$ \\
-Mode recall & $\mathbf{0.84\pm0.03}$ & $0.00$ & $0.00$ \\
-Diversity (curv.\ space) & $\mathbf{28.2\pm0.2}$ & $0.0$ & $0.0$ \\
-Obstacle-task success & $\mathbf{0.978\pm0.002}$ & $0.040$ & $0.018$ \\
-Sampling (ms/target, CPU) & $38.6\pm4.9$ & $0.013$ & $0.022$ \\
+Tip err.\ best-of-$K$ (mm) & $0.44\pm0.03$ & $\mathbf{0.23}$ & $13.4\pm0.0$ & $17.3\pm0.2$ \\
+Success @ 5 mm & $\mathbf{1.00}$ & $0.994$ & $0.060$ & $0.027$ \\
+Mode recall & $\mathbf{0.84\pm0.03}$ & $0.73$ & $0.00$ & $0.00$ \\
+Diversity (curv.\ space) & $\mathbf{28.2\pm0.2}$ & $9.5$ & $0.0$ & $0.0$ \\
+Obstacle success & $\mathbf{0.978\pm0.002}$ & $0.960$ & $0.040$ & $0.018$ \\
+Query time (ms/target) & $38.6\pm4.9$ & $395$ & $\mathbf{0.013}$ & $0.022$ \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -238,7 +250,10 @@ Sampling (ms/target, CPU) & $38.6\pm4.9$ & $0.013$ & $0.022$ \\
 Table~\ref{tab:core} summarizes the four core experiments. \textbf{E1
 (accuracy):} best-of-$K$ diffusion reaches $0.44\,$mm mean tip error with
 $100\%$ success; the deterministic MLP, structurally limited to the
-conditional mean, plateaus at $13.4\,$mm, and the MDN does not improve on it.
+conditional mean, plateaus at $13.4\,$mm, and the MDN does not improve on
+it. The classical grad-IK reference reaches $0.23\,$mm ($99.4\%$)---when the
+true model is available to optimize through at query time, classical
+optimization is fully competitive on accuracy.
 \textbf{E2 (multimodality):} against enumerated ground-truth solution sets,
 diffusion recovers $0.84\pm0.03$ of modes; both baselines recover none---the
 MLP because it is deterministic, and the MDN not through classic component
@@ -248,11 +263,18 @@ diversity are computed over \emph{successful} samples only, and the MDN
 almost never produces one. This is not a tuning artifact: sweeping the
 MDN's component count over $\{4,8,16,32\}$ improves best-of-$K$ error only
 from $18.7$ to $14.8\,$mm---never surpassing the plain MLP---and mode recall
-remains exactly zero at every setting. \textbf{E3 (downstream value):} when success requires \emph{any} of
+remains exactly zero at every setting. grad-IK's random restarts, by
+contrast, \emph{do} recover modes (recall $0.73$)---multimodality does not
+require learning---though with a third of diffusion's solution diversity
+($9.5$ vs.\ $28.2$). \textbf{E3 (downstream value):} when success requires \emph{any} of
 $K$ samples to be both accurate and collision-free among random obstacles,
 diffusion succeeds on $97.8\%$ of trials vs.\ $4.0\%$ (MLP)---redundancy is
 only exploitable if the model can represent it. \textbf{E4 (cost):}
-$38.6\,$ms per target for a batch of 32 samples on CPU. With three seeds,
+$38.6\,$ms per target for a batch of 32 samples on CPU, versus $395\,$ms
+for grad-IK---and, more fundamentally, grad-IK requires the differentiable
+simulator in the loop at every query, whereas the learned methods answer
+from samples of the plant alone. That amortization property is exactly what
+Sec.~\ref{sec:transfer} puts under stress. With three seeds,
 formal hypothesis testing adds little; the separations are instead
 unambiguous by inspection: on every metric in Table~\ref{tab:core} the
 \emph{worst} diffusion seed outperforms the \emph{best} baseline seed---for
@@ -474,8 +496,9 @@ domain, not a validated model of a specific physical arm. (3)
 study, the baseline transfer collapse, and the fine-tuning grid carry
 three-seed statistics; the query-budget, ordering, and guidance experiments
 use one trained model (with within-experiment pairing across 15--45 targets),
-and the hyperparameter, dataset-size, and morphology studies are likewise
-single-seed.
+the hyperparameter, dataset-size, and morphology studies are likewise
+single-seed, and the grad-IK reference is a single optimization run per
+target.
 (4) \textbf{Mode-enumeration hyperparameters} were calibrated for the
 four-segment arm; morphology results therefore report accuracy and
 obstacle-task metrics only. (5) \textbf{Success-rate granularity} in transfer

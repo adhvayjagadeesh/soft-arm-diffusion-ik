@@ -1,0 +1,20 @@
+{
+  "n_restarts": 32,
+  "iters": 300,
+  "accuracy": {
+    "tip_err_best_of_K_mm": 0.22916956208094125,
+    "success_rate_best_of_K": 0.994140625,
+    "note": "grad-IK's output is inherently best-of-restarts; no single-sample analogue"
+  },
+  "timing": {
+    "ms_per_target_batchK": 395.25418542325497,
+    "K": 32
+  },
+  "multimodality": {
+    "mode_recall": 0.7333333371207118,
+    "diversity": 9.460601031780243
+  },
+  "obstacle_task": {
+    "success_rate": 0.96
+  }
+}
