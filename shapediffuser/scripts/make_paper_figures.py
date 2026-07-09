@@ -46,7 +46,7 @@ def fig_finetune_cliff():
     """Centerpiece: retention vs transfer across PCC mixing ratios, 3 seeds.
     Both measures are tip error in mm -> one shared axis, two series."""
     d = json.load(open("finetune_grid_summary.json"))
-    ratios = [0.0, 0.2, 0.5]
+    ratios = [0.0, 0.05, 0.1, 0.15, 0.2, 0.5]
     pcc = [d["finetune_grid"][f"pcc_mix_{r}"]["pcc_err_mm"] for r in ratios]
     ela = [d["finetune_grid"][f"pcc_mix_{r}"]["elastica_err_mm"] for r in ratios]
     base_ela = d["baseline_transfer"]["diffusion"]["elastica_tip_err_best_of_K_mm"]["mean"]

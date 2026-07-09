@@ -291,36 +291,39 @@ that made the unregularized result exciting: 145.3mm/5% is barely
 distinguishable from (arguably slightly worse than) the no-fine-tune
 baseline, a small fraction of the unregularized run's 63.5mm/10%.
 
-**Is there a sweet spot? (third point at 20% PCC mix, then the full grid
-rerun at 3 seeds x 3 ratios for the RA-L submission - all conditions through
-the same script on `checkpoints_seed0/1/2`; `finetune_grid_summary.json`):**
-**no - the curve is a cliff, not a slope, and this is seed-stable.**
+**Is there a sweet spot? (full grid at 3 seeds x SIX ratios -
+0/5/10/15/20/50% PCC mix, all conditions through the same script on
+`checkpoints_seed0/1/2`; `finetune_grid_summary.json`):**
+**no - the curve is a cliff, its edge is located below 5% mixing, and this
+is seed-stable.**
 
 Mean +/- std over 3 seeds:
 
 | PCC mix | PCC err (mm) | PCC success | Elastica err (mm) | Elastica success |
 |---|---|---|---|---|
 | 0% (pure Elastica) | 133.4 +/- 1.2 | 0% | **67.1 +/- 1.0** | **10.0 +/- 0.0%** |
-| 20% | 11.6 +/- 0.3 | 50.8 +/- 3.7% | 148.0 +/- 1.6 | 10.0 +/- 0.0% |
-| 50% | 3.0 +/- 0.4 | 95.5 +/- 0.6% | 152.3 +/- 0.4 | 3.3 +/- 2.4% |
+| 5% | 30.7 +/- 0.6 | 6.4% | 133.8 +/- 3.1 | 8.3 +/- 2.4% |
+| 10% | 21.7 +/- 0.5 | 17.0% | 143.2 +/- 4.9 | 8.3 +/- 2.4% |
+| 15% | 16.7 +/- 0.2 | 26.3% | 146.0 +/- 3.4 | 8.3 +/- 2.4% |
+| 20% | 11.6 +/- 0.3 | 50.8% | 148.0 +/- 1.6 | 10.0 +/- 0.0% |
+| 50% | 3.0 +/- 0.4 | 95.5% | 152.3 +/- 0.4 | 3.3 +/- 2.4% |
 
-PCC retention improves smoothly and monotonically with more mixing (133.4 ->
-11.6 -> 3.0mm). Elastica transfer does **not** degrade gracefully in step -
-mean transfer error collapses almost entirely the instant *any* substantial
-PCC data is introduced (67mm -> 148mm at just 20%, essentially flat from 20%
-to 50%, and worse than the 139.9mm no-fine-tune baseline). One metric nuance
-worth knowing: at 20% mix the *binary* success rate stays at 10% (2/20
-targets on every seed), same as the 0% mix - with n_targets=20 the success
-metric has 5% granularity and is the noisier lens; the mean-error curve is
-the reliable one and shows the cliff unambiguously. **Conclusion: retention
-and transfer are in sharp tension under per-batch data mixing, not on a
-smoothly interpolatable tradeoff** - the transfer signal needs training
-almost exclusively on Elastica data to manifest at all. A genuine middle
-ground, if one exists, would likely need a different regularization
+PCC retention improves smoothly and monotonically at every step (133.4 ->
+30.7 -> 21.7 -> 16.7 -> 11.6 -> 3.0mm). Elastica transfer does **not**
+degrade gracefully in step - the fine sweep (added for the RA-L revision,
+addressing the external critique that 3 coarse points couldn't distinguish
+a cliff from a smooth tradeoff) *locates* the collapse below the first grid
+point: at just 5% PCC data, transfer error has already rebounded from
+67.1mm to 133.8mm, forfeiting ~92% of the improvement over the 139.9mm
+no-fine-tune baseline, then drifts only slowly (143 -> 146 -> 148 ->
+152mm). Intermediate-ratio values are stable across seeds (std <= 4.9mm),
+so this is not an unlucky run. **Conclusion: retention and transfer sit on
+a cliff whose edge lies below 5% mixing** - the transfer signal needs
+training almost exclusively on Elastica data to manifest at all. A genuine
+middle ground, if one exists, would likely need a different regularization
 mechanism entirely (e.g. parameter-level constraints like elastic weight
 consolidation, or freezing specific layers) rather than further
-data-mixing-ratio tuning - a meaningfully bigger undertaking, left as future
-work rather than pursued further this session.
+data-mixing-ratio tuning.
 
 ## Novelty / related work
 

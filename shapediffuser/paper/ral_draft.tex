@@ -1,19 +1,29 @@
-% RA-L draft — generated against paper/claims_audit.md.
+% RA-L draft — generated against paper/claims_audit.md, revised per the
+% external critique (2026-07-09).
+% ANONYMITY: RA-L uses double-anonymous review (verified 2026-07-08;
+% violations risk desk rejection). Set \anonymoustrue below to build the
+% review copy (name removed, repository link replaced by an anonymized
+% mirror placeholder — create the actual mirror at anonymous.4open.science
+% from the public GitHub repo before submitting). Leave \anonymousfalse for
+% the public/camera-ready copy.
 % TODO before submission:
-%   (1) fill in author block / affiliation / funding,
+%   (1) [DONE] author block: sole author, Independent Researcher
 %   (2) [DONE 2026-07-08] citations web-verified one by one; see note at the
-%       top of references.bib (one title corrected; re-check the arXiv entry
-%       shortly before submission),
+%       top of references.bib (re-check the arXiv entry shortly before
+%       submission),
 %   (3) check current RA-L page limits and template version (this uses the
-%       generic IEEEtran journal class as a stand-in),
-%   (4) decide whether fig_scaling stays in the main text or moves to
-%       supplementary material.
+%       generic IEEEtran journal class as a stand-in; limit verified 6 pages
+%       + up to 2 paid),
+%   (4) create the anonymous.4open.science mirror and paste its URL below.
 \documentclass[journal]{IEEEtran}
 
 \usepackage{graphicx}
 \usepackage{amsmath,amssymb}
 \usepackage{booktabs}
 \usepackage[colorlinks=false]{hyperref}
+
+\newif\ifanonymous
+\anonymousfalse % \anonymoustrue for the double-anonymous review copy
 
 \graphicspath{{figures/}}
 
@@ -25,8 +35,13 @@
 \title{When Does Multimodal Diffusion Inverse Kinematics Help Soft Continuum
 Arms---and Does It Survive Model Mismatch?}
 
-\author{Adhvay~Jagadeesh% TODO: affiliation footnote, co-authors/mentor, funding
-\thanks{TODO: affiliation, correspondence, and funding acknowledgment.}}
+\ifanonymous
+\author{Anonymous submission}
+\else
+\author{Adhvay~Jagadeesh%
+\thanks{A.~Jagadeesh is an independent researcher
+(e-mail: mail.ack.ventures@gmail.com).}}
+\fi
 
 \maketitle
 
@@ -52,9 +67,10 @@ Cosserat-rod simulator, accuracy collapses on every seed
 is simulator-specific. We characterize what recovers this loss: candidate
 selection under a query budget helps but is bounded; a diversity-aware query
 order significantly outperforms a confidence order (paired $t{=}3.3$);
-guidance-based adaptation generalizes but is modest; gain-domain-randomization
-fails entirely; and fine-tuning on target-domain data reveals a sharp
-retention--transfer cliff with no data-mixing sweet spot. All code, data, and
+guidance-based adaptation yields a modest, statistically suggestive gain;
+gain-domain-randomization fails entirely; and fine-tuning on target-domain
+data reveals a sharp retention--transfer cliff with no data-mixing sweet
+spot. All code, data, and
 per-experiment result files are made available.
 \end{abstract}
 
@@ -174,21 +190,26 @@ of the $K$ samples to be simultaneously accurate and collision-free.
 
 \textbf{Ground-truth modes.} For evaluation targets we enumerate the true IK
 solution set by a $2\times10^6$-sample sweep, keeping actuations whose tip
-lands within tolerance and clustering with DBSCAN~\cite{ester1996dbscan}.
-Clustering, mode matching, and diversity are computed in the 8-D per-segment
-\emph{curvature} space $(k_x,k_y)$ rather than raw pressures: the
-chamber-to-curvature map has a per-segment null space (common-mode pressure
-offsets change $\mathbf{q}$ but not the shape), which would otherwise
-contaminate distance-based metrics. Evaluation targets average $2.05$
-ground-truth modes (range 0--6).
+lands within tolerance and clustering with DBSCAN~\cite{ester1996dbscan}
+($\varepsilon{=}12$, $\text{min\_samples}{=}5$; a generated sample matches a
+mode within radius $15$). Clustering, mode matching, and diversity are
+computed in the 8-D per-segment \emph{curvature} space $(k_x,k_y)$ rather
+than raw pressures: the chamber-to-curvature map has a per-segment null
+space (common-mode pressure offsets change $\mathbf{q}$ but not the shape),
+which would otherwise contaminate distance-based metrics. Evaluation targets
+average $2.05$ ground-truth modes (range 0--6); targets where the sweep
+finds no mode are excluded from recall averages.
 
 \textbf{High-fidelity domain.} The transfer domain is a Cosserat-rod
 simulation of the same arm in PyElastica~\cite{gazzola2018forward,
 zhang2019modeling}: one rod, 48 elements, per-segment constant internal
 couples derived from the same chamber pressures, damped to quasi-static
-equilibrium (${\sim}4\,$s of compute per evaluation). A sweep over the couple
-gain confirmed the PCC--Elastica discrepancy is directional/structural rather
-than a scale mismatch: no gain setting aligns the two workspaces.
+equilibrium (${\sim}4\,$s of compute per evaluation). The two simulators
+agree exactly in the zero-curvature case---uniform pressures produce the
+identical straight configuration (tip at $[0,0,0.24]\,$m) in both---so the
+discrepancy lies in the bending response, not in trivial misalignment. A
+sweep over the couple gain further confirmed it is directional/structural
+rather than a scale mismatch: no gain setting aligns the two workspaces.
 
 \section{When Multimodality Helps}
 \label{sec:core}
@@ -231,7 +252,12 @@ remains exactly zero at every setting. \textbf{E3 (downstream value):} when succ
 $K$ samples to be both accurate and collision-free among random obstacles,
 diffusion succeeds on $97.8\%$ of trials vs.\ $4.0\%$ (MLP)---redundancy is
 only exploitable if the model can represent it. \textbf{E4 (cost):}
-$38.6\,$ms per target for a batch of 32 samples on CPU.
+$38.6\,$ms per target for a batch of 32 samples on CPU. With three seeds,
+formal hypothesis testing adds little; the separations are instead
+unambiguous by inspection: on every metric in Table~\ref{tab:core} the
+\emph{worst} diffusion seed outperforms the \emph{best} baseline seed---for
+tip error, $0.49$ vs.\ $13.33\,$mm, a gap exceeding $400\times$ the
+across-seed standard deviation.
 
 Three ablations support the protocol: guidance weight has an inverted-U
 optimum at $1.5$ (both accuracy and diversity collapse beyond ${\sim}3$);
@@ -295,7 +321,30 @@ simulator collapses accuracy from $0.67\pm0.03\,$mm ($100\%$ success) to
 $139.9\pm1.8\,$mm with $0\%$ success on every seed ($n{=}20$ held-out
 targets, $K{=}8$); the MLP collapses similarly ($13.8 \rightarrow
 164.4\,$mm). The learned inverse map is simulator-specific. The rest of this
-section quantifies what does---and does not---recover the loss.
+section quantifies what does---and does not---recover the loss;
+Table~\ref{tab:synthesis} summarizes.
+
+\begin{table}[t]
+\caption{Recovery mechanisms at a glance (Elastica-domain performance;
+best configuration of each mechanism).}
+\label{tab:synthesis}
+\centering
+\footnotesize
+\setlength{\tabcolsep}{2.2pt}
+\begin{tabular}{lccl}
+\toprule
+Mechanism & err (mm) & succ. & Cost / caveat \\
+\midrule
+none (PCC-trained) & $139.9\pm1.8$ & $0\%$ & --- \\
+best-of-32 selection & $130.4$ & $0\%$ & 32 target queries/target \\
+\; + diversity order & $-6.7$ at $m{=}8$ & $0\%$ & same queries; $p{\approx}0.002$ \\
+guided sampling & $129.0$ & $0\%$ & 400 labels; suggestive \\
+gain randomization & $140.6$ & $0\%$ & degrades source; no gain \\
+fine-tune, $0\%$ mix & $\mathbf{67.1\pm1.0}$ & $\mathbf{10\%}$ & forgets source ($133\,$mm) \\
+fine-tune, $\geq 5\%$ mix & $\geq 133.8$ & $\leq 10\%$ & retains source, forfeits gain \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \subsection{Selection under a query budget}
 \begin{figure}[t]
@@ -314,17 +363,21 @@ A multimodal model offers something a deterministic one cannot: $K$ diverse
 candidates to test against the target domain. Spending a budget of $m$
 Elastica evaluations and keeping the best candidate reduces mean error from
 $161.5$ ($m{=}1$) to $130.4\,$mm ($m{=}32$), improving 44 of 45 targets
-(Fig.~\ref{fig:budget})---real, broad-based, but bounded: success stays at
-$0\%$, and the gap to tolerance remains ${\sim}26\times$. \emph{How} the
+(Fig.~\ref{fig:budget})---real and broad-based, but to be blunt about its
+practical value: success stays at $0\%$, the gap to tolerance remains
+${\sim}26\times$, and under this budget selection never actually solves a
+single target. \emph{How} the
 budget is spent matters: a greedy farthest-point ordering in curvature space
 (seeded from the same most-confident candidate, so $m{=}1$ is identical)
 beats confidence ordering by $6.7\,$mm at $m{=}8$ (paired $t{=}3.34$,
 $p{\approx}0.002$; 24/12 targets) and $3.3\,$mm at $m{=}16$ ($t{=}3.21$).
 Notably, neither candidate diversity itself nor local PCC Jacobian
-sensitivity predicts \emph{which} targets benefit (properly powered null at
-$n{=}45$: $r{=}0.20$, $p{=}0.19$ and $r{=}0.02$, $p{=}0.88$); an $n{=}20$
-pilot had suggested a diversity correlation that did not survive
-replication---a caution we report rather than hide.
+sensitivity predicts \emph{which} targets benefit: at $n{=}45$---sized to
+detect $r{\geq}0.41$ at $80\%$ power, i.e., the effect size an $n{=}20$
+pilot had suggested---the observed correlations are $r{=}0.20$ ($p{=}0.19$)
+and $r{=}0.02$ ($p{=}0.88$). This rules out the pilot's effect but not
+smaller ones; the pilot's non-replication is a caution we report rather
+than hide.
 
 \subsection{Guiding generation toward the target domain}
 Beyond selecting among candidates, we steer generation itself: a small
@@ -333,8 +386,12 @@ transfer error from (candidate, target), and its gradient nudges the
 denoised estimate at every DDIM step, as in classifier
 guidance~\cite{dhariwal2021diffusion}. On 15 \emph{held-out} targets this
 improves best-of-16 error from $134.6$ to $129.0\,$mm (paired
-$5.6\pm2.5\,$mm, $t{=}2.27$, $p{\approx}0.04$; 11/15 targets)---genuine
-generalization, but modest, and the weakest confirmed effect in this paper.
+$5.6\pm2.5\,$mm, $t{=}2.27$, $p{\approx}0.04$; 11/15 targets). This is
+generalization to unseen targets, but it is the weakest effect in the
+paper: all $p$-values here are uncorrected, and across the family of
+${\sim}$six hypothesis tests we report, only the ordering result
+($p{\approx}0.002$) survives a Bonferroni correction---we therefore read
+this one as \emph{suggestive} rather than confirmed.
 Combining it with diversity-ordering adds nothing: guidance
 \emph{concentrates} the candidate distribution while diversity-ordering
 \emph{spreads} selection, and a $2\times2$ factorial shows the mechanisms in
@@ -350,7 +407,7 @@ cannot fix a discrepancy in which direction it bends.
 
 \textbf{Target-domain data works---at a price.}
 \begin{table}[t]
-\caption{Fine-tuning on $10^4$ Elastica-simulated samples at three PCC-data
+\caption{Fine-tuning on $10^4$ Elastica-simulated samples at six PCC-data
 mixing ratios (mean $\pm$ std, 3 seeds; held-out targets).}
 \label{tab:cliff}
 \centering
@@ -362,6 +419,9 @@ PCC mix & PCC err (mm) & succ. & Elastica err (mm) & succ. \\
 \midrule
 none (baseline) & $0.67\pm0.03$ & $100\%$ & $139.9\pm1.8$ & $0\%$ \\
 $0\%$  & $133.4\pm1.2$ & $0\%$ & $\mathbf{67.1\pm1.0}$ & $\mathbf{10\%}$ \\
+$5\%$  & $30.7\pm0.6$ & $6\%$ & $133.8\pm3.1$ & $8\%$ \\
+$10\%$ & $21.7\pm0.5$ & $17\%$ & $143.2\pm4.9$ & $8\%$ \\
+$15\%$ & $16.7\pm0.2$ & $26\%$ & $146.0\pm3.4$ & $8\%$ \\
 $20\%$ & $11.6\pm0.3$ & $51\%$ & $148.0\pm1.6$ & $10\%$ \\
 $50\%$ & $3.0\pm0.4$ & $96\%$ & $152.3\pm0.4$ & $3\%$ \\
 \bottomrule
@@ -371,27 +431,35 @@ $50\%$ & $3.0\pm0.4$ & $96\%$ & $152.3\pm0.4$ & $3\%$ \\
 \begin{figure}[t]
 \centering
 \includegraphics[width=\linewidth]{fig_finetune_cliff.png}
-\caption{The retention--transfer cliff (mean $\pm$ std, 3 seeds). Fine-tuning
-the PCC-pretrained model on $10^4$ Elastica samples: retention (PCC error)
-improves smoothly as PCC data is mixed back in, but the transfer gain
-collapses almost entirely at just $20\%$ PCC data. There is no data-mixing
-sweet spot.}
+\caption{The retention--transfer cliff (mean $\pm$ std, 3 seeds; six mixing
+ratios). Fine-tuning the PCC-pretrained model on $10^4$ Elastica samples:
+retention (PCC error) improves smoothly and monotonically as PCC data is
+mixed back in, but the transfer gain collapses almost entirely by the first
+grid point ($5\%$ PCC data). There is no data-mixing sweet spot.}
 \label{fig:cliff}
 \end{figure}
 
 Fine-tuning the pretrained model \emph{exclusively} on $10^4$
 Elastica-simulated samples yields the only nonzero transfer success of any
-method---$67.1\pm1.0\,$mm and exactly $10\%$ success on all three seeds---at
-the cost of catastrophic forgetting~\cite{kirkpatrick2017overcoming} of the
-source domain ($0.67 \rightarrow 133.4\,$mm). Mixing PCC data back into
-fine-tuning batches restores retention smoothly ($133.4 \rightarrow 11.6
-\rightarrow 3.0\,$mm at $0/20/50\%$ mix) but the transfer gain does not
-degrade in step: it collapses immediately, to $148.0\pm1.6\,$mm at just
-$20\%$ mix (Table~\ref{tab:cliff}, Fig.~\ref{fig:cliff}). Retention and
-transfer sit on a \emph{cliff}, not a tradeoff curve---under per-batch data
-mixing there is no sweet spot, suggesting parameter-level regularization
-(\eg\ elastic weight consolidation~\cite{kirkpatrick2017overcoming}) as the
-necessary next mechanism. (Binary success has $5\%$ granularity at
+method---$67.1\pm1.0\,$mm and $10\%$ success ($2/20$ targets on each seed;
+recall the $5\%$ metric granularity)---at the cost of catastrophic
+forgetting~\cite{kirkpatrick2017overcoming} of the source domain ($0.67
+\rightarrow 133.4\,$mm). Mixing PCC data back into fine-tuning batches
+restores retention smoothly and monotonically across all six ratios
+($133.4 \rightarrow 30.7 \rightarrow 21.7 \rightarrow 16.7 \rightarrow 11.6
+\rightarrow 3.0\,$mm), but the transfer gain does not degrade in step: the
+fine sweep \emph{locates} the collapse below the first grid point---at just
+$5\%$ PCC data, transfer error has already rebounded from $67.1$ to
+$133.8\pm3.1\,$mm, forfeiting ${\sim}92\%$ of the improvement over the
+no-fine-tune baseline, and it drifts only slowly thereafter
+(Table~\ref{tab:cliff}, Fig.~\ref{fig:cliff}). The values at intermediate
+ratios are stable across seeds (std $\leq 4.9\,$mm), so this is not an
+unlucky training run. Retention and transfer sit on a \emph{cliff} whose
+edge lies below $5\%$ mixing, not on a smooth tradeoff curve---under
+per-batch data mixing there is no sweet spot, suggesting parameter-level
+regularization (\eg\ elastic weight
+consolidation~\cite{kirkpatrick2017overcoming}) as the necessary next
+mechanism. (Binary success has $5\%$ granularity at
 $n_\text{targets}{=}20$; mean error carries the statistical weight
 throughout.)
 
@@ -414,10 +482,11 @@ obstacle-task metrics only. (5) \textbf{Success-rate granularity} in transfer
 experiments is $5\%$ ($n_\text{targets}{=}20$).
 
 \section{Conclusion}
-Multimodal diffusion IK gives soft continuum arms a real, mechanistically
-attributable advantage---it is redundancy resolution, growing with segment
-count and vanishing when the target specifies the whole shape---but the
-learned inverse map itself does not survive a change of dynamics model.
+For the PCC-representable pneumatic continuum arms studied here, multimodal
+diffusion IK delivers a real, mechanistically attributable advantage---it is
+redundancy resolution, growing with segment count and vanishing when the
+target specifies the whole shape---but the learned inverse map itself does
+not survive a change of dynamics model.
 Inference-time selection and guidance recover a bounded fraction of the loss;
 synthetic gain randomization recovers none; and target-domain fine-tuning
 buys genuine transfer only at a sharp retention cliff that data mixing cannot
@@ -426,9 +495,15 @@ better sampling from a source-domain model but mechanisms that let a small
 amount of target-domain data reshape the model without erasing it.
 
 \section*{Reproducibility}
+\ifanonymous
 All code, configuration, per-experiment result files, and the
-$10^4$-sample Elastica dataset are available in the project repository
-(TODO: public link or ``available on request'' per venue policy).
+$10^4$-sample Elastica dataset are available in an anonymized repository:
+\url{https://anonymous.4open.science/r/REPLACE-BEFORE-SUBMISSION}.
+\else
+All code, configuration, per-experiment result files, and the
+$10^4$-sample Elastica dataset are available at
+\url{https://github.com/adhvayjagadeesh/CCIR-Research-Project}.
+\fi
 
 \bibliographystyle{IEEEtran}
 \bibliography{references}
