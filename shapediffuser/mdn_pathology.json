@@ -1,0 +1,70 @@
+{
+  "4": {
+    "effective_components_mean": 3.9471449851989746,
+    "sigma_mean": 0.4471268653869629,
+    "sigma_min": 0.053255364298820496,
+    "sigma_frac_at_clamp_floor": 0.0,
+    "component_mean_tip_err_median_mm": 10.128987312316895,
+    "best_component_tip_err_mean_mm": 9.026811599731445,
+    "best_component_success_rate": 0.0703125,
+    "frac_components_within_tol": 0.046875,
+    "train_curve": {
+      "n_epochs": 60,
+      "first": 8.44325,
+      "last": 7.66044,
+      "max_epoch_increase": -0.00016999999999978144,
+      "frac_nonincreasing_steps": 1.0
+    }
+  },
+  "8": {
+    "effective_components_mean": 7.82278299331665,
+    "sigma_mean": 0.4201240837574005,
+    "sigma_min": 0.038131553679704666,
+    "sigma_frac_at_clamp_floor": 0.0,
+    "component_mean_tip_err_median_mm": 9.24843978881836,
+    "best_component_tip_err_mean_mm": 7.528642177581787,
+    "best_component_success_rate": 0.140625,
+    "frac_components_within_tol": 0.046875,
+    "train_curve": {
+      "n_epochs": 60,
+      "first": 8.24249,
+      "last": 7.26935,
+      "max_epoch_increase": -0.00016000000000016001,
+      "frac_nonincreasing_steps": 1.0
+    }
+  },
+  "16": {
+    "effective_components_mean": 15.42822265625,
+    "sigma_mean": 0.3913780152797699,
+    "sigma_min": 0.027452271431684494,
+    "sigma_frac_at_clamp_floor": 0.0,
+    "component_mean_tip_err_median_mm": 8.283954620361328,
+    "best_component_tip_err_mean_mm": 6.072646141052246,
+    "best_component_success_rate": 0.296875,
+    "frac_components_within_tol": 0.06494140625,
+    "train_curve": {
+      "n_epochs": 60,
+      "first": 8.05772,
+      "last": 6.8632,
+      "max_epoch_increase": -0.00039999999999995595,
+      "frac_nonincreasing_steps": 1.0
+    }
+  },
+  "32": {
+    "effective_components_mean": 30.491609573364258,
+    "sigma_mean": 0.3660617768764496,
+    "sigma_min": 0.023534545674920082,
+    "sigma_frac_at_clamp_floor": 0.0,
+    "component_mean_tip_err_median_mm": 7.493488311767578,
+    "best_component_tip_err_mean_mm": 4.959774971008301,
+    "best_component_success_rate": 0.4921875,
+    "frac_components_within_tol": 0.081787109375,
+    "train_curve": {
+      "n_epochs": 60,
+      "first": 7.86419,
+      "last": 6.45631,
+      "max_epoch_increase": -0.0005100000000002325,
+      "frac_nonincreasing_steps": 1.0
+    }
+  }
+}

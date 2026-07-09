@@ -257,11 +257,15 @@ optimization is fully competitive on accuracy.
 \textbf{E2 (multimodality):} against enumerated ground-truth solution sets,
 diffusion recovers $0.84\pm0.03$ of modes; both baselines recover none---the
 MLP because it is deterministic, and the MDN not through classic component
-collapse (its mixture weights stay near-uniform and its component means
-remain spread) but because no component is accurate enough: mode recall and
+collapse but because no component is accurate enough: mode recall and
 diversity are computed over \emph{successful} samples only, and the MDN
-almost never produces one. This is not a tuning artifact: sweeping the
-MDN's component count over $\{4,8,16,32\}$ improves best-of-$K$ error only
+almost never produces one. Per-component analysis rules out a training
+pathology---NLL decreases monotonically at every epoch, no variance reaches
+its clamp floor, and $7.8$ of $8$ components remain effective---yet even the
+\emph{best} component mean per target carries $7.5\,$mm error (median
+component $9.2\,$mm) against the $5\,$mm tolerance, and sampling with the
+learned $\sigma$ smears this further. Nor is it a tuning artifact: sweeping
+the component count over $\{4,8,16,32\}$ improves best-of-$K$ error only
 from $18.7$ to $14.8\,$mm---never surpassing the plain MLP---and mode recall
 remains exactly zero at every setting. grad-IK's random restarts, by
 contrast, \emph{do} recover modes (recall $0.73$)---multimodality does not
