@@ -1,0 +1,21 @@
+Summary.txt - Supplementary video contents
+===========================================
+
+The video (32.5 s) accompanies the manuscript "When Does Multimodal
+Diffusion Inverse Kinematics Help Soft Continuum Arms - and Does It
+Survive Model Mismatch?" and contains two scenes rendered directly
+from the paper's trained models and evaluation protocol:
+
+Scene 1 (Conditional diffusion sampling): eight candidate arm
+configurations evolve from noise into distinct inverse-kinematics
+solutions for the same tip target, visualizing the DDIM denoising
+trajectory described in Sec. III of the paper.
+
+Scene 2 (Obstacle avoidance, two trials): for a tip target with three
+randomly placed spherical obstacles (the paper's E3 task), the
+deterministic MLP baseline's single answer (red, dashed) fails, while
+the diffusion model's candidate set includes accurate,
+collision-free solutions (blue); orange candidates are accurate but
+colliding, gray candidates inaccurate.
+
+The paper is fully self-contained; the video is illustrative only.

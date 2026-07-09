@@ -1,0 +1,491 @@
+% Shared manuscript body - included by BOTH ral_draft.tex (journal/final,
+% IEEEtran) and ral_submission.tex (RA-L initial submission, ieeeconf
+% conference format, anonymous). Wrappers define \ifanonymous and the
+% paperkeywords environment. Edit content HERE, not in the wrappers.
+
+\begin{abstract}
+Soft continuum arms are highly redundant: many actuation patterns realize the
+same tip position. Deterministic learned inverse kinematics (IK) regressors
+average these incompatible solutions into invalid ones, while a conditional
+diffusion model can represent the full solution distribution. We present a
+controlled simulation study that asks two questions the existing literature
+leaves open: \emph{when} does this multimodality actually help, and does the
+advantage survive a change of dynamics model? On a piecewise-constant-curvature
+(PCC) pneumatic arm, a conditional diffusion model matches a deterministic
+baseline where redundancy is absent and dominates where it is present
+(mode recall $0.84\pm0.03$ vs.\ exactly $0$; obstacle-avoidance success
+$97.8\%$ vs.\ $4.0\%$; three seeds), and matches a strong optimization-based
+solver on accuracy at a tenth of its query cost without needing the
+simulator at query time. Two controlled manipulations show the
+advantage is specifically a redundancy effect: conditioning on the whole arm
+shape instead of the tip collapses sampled diversity by ${\sim}85\times$ and
+shrinks the baseline's disadvantage from ${\sim}30\times$ to ${\sim}3\times$,
+while increasing the number of segments widens the gap. However, when
+actuations from the PCC-trained model are executed on a high-fidelity
+Cosserat-rod simulator, accuracy collapses on every seed
+($0.67\,$mm $\rightarrow 139.9\,$mm, $0\%$ success): the learned inverse map
+is simulator-specific. We characterize what recovers this loss: candidate
+selection under a query budget helps but is bounded; a diversity-aware query
+order significantly outperforms a confidence order (paired $t{=}3.3$);
+guidance-based adaptation yields a modest, statistically suggestive gain;
+gain-domain-randomization fails entirely; and fine-tuning on target-domain
+data reveals a sharp retention--transfer cliff with no data-mixing sweet
+spot. All code, data, and
+per-experiment result files are made available.
+\end{abstract}
+
+\begin{paperkeywords}
+Modeling, Control, and Learning for Soft Robots; Deep Learning Methods;
+inverse kinematics; sim-to-sim transfer.
+\end{paperkeywords}
+
+\section{Introduction}
+
+\IEEEPARstart{A}{multi-segment} pneumatic continuum arm with three chambers
+per segment has more actuation degrees of freedom than task degrees of
+freedom: for a four-segment arm, a 12-D actuation vector determines a 3-D tip
+position. The inverse map is therefore one-to-many, and its preimages are not
+merely a connected null space---distinct arm shapes reach the same tip. A
+deterministic learned IK regressor trained by motor
+babbling~\cite{giorelli2015neural} fits the conditional \emph{mean} of this
+multimodal distribution and can return an actuation that realizes none of the
+true solutions. A conditional diffusion
+model~\cite{ho2020denoising,song2021denoising} instead learns the full
+conditional distribution $p(\mathbf{q}\,|\,\text{target})$ and can sample all
+solution modes.
+
+Diffusion models for robot action generation are now
+well-established~\cite{chi2023diffusion}, and diffusion-based IK has been
+demonstrated for rigid multi-arm systems~\cite{zhang2025ikdiffuser}. What the
+literature does not yet provide for \emph{soft continuum} arms is (i) a
+controlled account of when the multimodality actually matters---as opposed to
+diffusion simply being a strong regressor---and (ii) an honest measurement of
+whether the learned inverse map survives the model mismatch that any
+simulation-trained soft-arm controller must eventually face. Soft arms make
+question (ii) unusually pressing: their dynamics are hard to model, so the
+gap between any two models of the \emph{same} physical arm is large, and a
+method whose advantage evaporates under that gap is of limited practical
+value.
+
+We answer both questions in a fully reproducible sim-to-sim setting: an
+idealized, fast PCC model~\cite{webster2010design} as the training simulator,
+and a Cosserat-rod simulation (PyElastica~\cite{gazzola2018forward,
+zhang2019modeling}) of the same arm as the high-fidelity evaluation domain.
+Our contributions:
+\begin{enumerate}
+  \item \textbf{A validated advantage.} With three-seed statistics, diffusion
+  IK dominates learned MLP and mixture-density-network (MDN) baselines,
+  recovers $0.84\pm0.03$ of ground-truth IK modes where they structurally
+  recover none, and matches a classical random-restart optimization solver
+  on accuracy at a tenth of its query cost without simulator access at query
+  time---translating into a $97.8\%$ vs.\ $4.0\%$ obstacle-avoidance gap
+  over the learned baselines (Sec.~\ref{sec:core}).
+  \item \textbf{The mechanism, isolated.} Two controlled manipulations of
+  redundancy---conditioning on the whole body shape, and varying the number
+  of segments---show the advantage is specifically redundancy resolution,
+  not generic model capacity (Sec.~\ref{sec:mechanism}).
+  \item \textbf{A quantified transfer collapse---and what recovers it.} The
+  learned inverse map collapses under simulator change on every seed. We
+  quantify the recovery achievable by inference-time selection and guidance,
+  show a diversity-aware query ordering significantly outperforms the obvious
+  confidence ordering (paired $t{=}3.3$, $p{\approx}0.002$), show
+  gain-domain-randomization achieves nothing, and map a sharp
+  retention--transfer cliff for target-domain fine-tuning
+  (Sec.~\ref{sec:transfer}).
+\end{enumerate}
+Negative and bounded results are reported with the same prominence as
+positive ones; Sec.~\ref{sec:limitations} states the limitations explicitly.
+
+\section{Related Work}
+
+\textbf{IK for continuum arms.} Non-learned approaches solve continuum IK by
+optimization through a model at query time: Jacobian-based schemes for
+nonconstant-curvature arms~\cite{giorelli2015neural} and real-time FEM
+inversion~\cite{duriez2013control}; the constant-curvature kinematics
+underlying our fast simulator are reviewed in~\cite{webster2010design}, and
+STIFF-FLOP-style pneumatic arms motivate the three-chamber actuation
+model~\cite{cianchetti2014soft}. We include an optimization-based baseline
+of this family (random-restart gradient IK through the differentiable
+model). Learned approaches fit a deterministic target-to-actuation map on
+motor-babbling data~\cite{giorelli2015neural}; mixture density
+networks~\cite{bishop1994mixture} are the classical answer to multimodal
+regression and serve as the learned multimodal baseline.
+
+\textbf{Diffusion models for robots.} Denoising diffusion
+models~\cite{ho2020denoising} with DDIM sampling~\cite{song2021denoising} and
+classifier-free guidance~\cite{ho2022classifier} underpin diffusion
+policies~\cite{chi2023diffusion}. IKDiffuser~\cite{zhang2025ikdiffuser}
+solves IK for \emph{rigid multi-arm} systems with flexible kinematic-tree
+\emph{topology}; physically compliant continuum bodies are outside its scope.
+Selecting one action from a diffusion policy's samples via learned scorers is
+an active area; our transfer-guided sampling instead injects the score's
+gradient \emph{during} generation, in the spirit of classifier
+guidance~\cite{dhariwal2021diffusion}, and our query-budget framing asks how
+many \emph{expensive target-domain evaluations} selection needs, which we
+have not seen posed for soft-arm IK.
+
+\textbf{Crossing the reality gap.} Domain
+randomization~\cite{tobin2017domain} and target-domain fine-tuning are the
+standard levers; catastrophic forgetting under naive fine-tuning is
+well-documented~\cite{kirkpatrick2017overcoming}. We evaluate both levers in
+a controlled sim-to-sim instance and find the first fails completely while
+the second exposes a sharp retention--transfer tension.
+
+\section{Setup}
+\label{sec:setup}
+
+\textbf{Arm and training simulator.} The training domain is a four-segment
+PCC arm (segment length $60\,$mm, total length $240\,$mm). Each segment has
+three $120^\circ$-spaced chambers with normalized pressures
+$\mathbf{q}\in[0,1]^{12}$; a linear chamber-to-curvature map (gain $25$)
+yields per-segment curvature components $(k_x,k_y)$, and forward kinematics
+composes constant-curvature arcs. The model is batched and differentiable.
+
+\textbf{Data and models.} Training data are $5\times10^5$ i.i.d.\ uniform
+actuations pushed through forward kinematics. The diffusion model is a
+residual MLP denoiser (six FiLM-conditioned blocks, width 512) trained as a
+DDPM ($T{=}1000$, cosine schedule) with classifier-free guidance
+(condition dropout $0.1$); sampling uses DDIM. Ablations
+(Sec.~\ref{sec:core}) fix guidance weight $1.5$ and $20$ DDIM steps.
+Baselines: an MLP regressor and an MDN (eight mixture components), matched
+in width, plus a classical optimization-based reference---gradient-descent
+IK through the differentiable PCC model from 32 random restarts (Adam, 300
+iterations), denoted grad-IK. Unless stated otherwise we sample $K{=}32$
+candidates per target and report best-of-$K$; success means tip error under
+$5\,$mm ($2\%$ of arm length). The obstacle task (E3) runs 200 trials, each placing three random
+spherical obstacles (radius $2\,$cm) in the workspace; success requires any
+of the $K$ samples to be simultaneously accurate and collision-free.
+
+\textbf{Ground-truth modes.} For evaluation targets we enumerate the true IK
+solution set by a $2\times10^6$-sample sweep, keeping actuations whose tip
+lands within tolerance and clustering with DBSCAN~\cite{ester1996dbscan}
+($\varepsilon{=}12$, $\text{min\_samples}{=}5$; a generated sample matches a
+mode within radius $15$). Clustering, mode matching, and diversity are
+computed in the 8-D per-segment \emph{curvature} space $(k_x,k_y)$ rather
+than raw pressures: the chamber-to-curvature map has a per-segment null
+space (common-mode pressure offsets change $\mathbf{q}$ but not the shape),
+which would otherwise contaminate distance-based metrics. Evaluation targets
+average $2.05$ ground-truth modes (range 0--6); targets where the sweep
+finds no mode are excluded from recall averages.
+
+\textbf{High-fidelity domain.} The transfer domain is a Cosserat-rod
+simulation of the same arm in PyElastica~\cite{gazzola2018forward,
+zhang2019modeling}: one rod, 48 elements, per-segment constant internal
+couples derived from the same chamber pressures, damped to quasi-static
+equilibrium (${\sim}4\,$s of compute per evaluation). The two simulators
+agree exactly in the zero-curvature case---uniform pressures produce the
+identical straight configuration (tip at $[0,0,0.24]\,$m) in both---so the
+discrepancy lies in the bending response, not in trivial misalignment. A
+sweep over the couple gain further confirmed it is directional/structural
+rather than a scale mismatch: no gain setting aligns the two workspaces.
+
+\section{When Multimodality Helps}
+\label{sec:core}
+
+\begin{table}[t]
+\caption{Core comparison on the PCC arm (mean $\pm$ std, 3 seeds; $K{=}32$).
+Mode recall and diversity are computed over successful samples only.
+grad-IK is a single optimization run per target (no training, hence no
+seeds) and requires the differentiable simulator at query time.}
+\label{tab:core}
+\centering
+\scriptsize
+\setlength{\tabcolsep}{2.2pt}
+\begin{tabular}{lcccc}
+\toprule
+ & Diffusion & grad-IK & MLP & MDN \\
+\midrule
+Tip err.\ best-of-$K$ (mm) & $0.44\pm0.03$ & $\mathbf{0.23}$ & $13.4\pm0.0$ & $17.3\pm0.2$ \\
+Success @ 5 mm & $\mathbf{1.00}$ & $0.994$ & $0.060$ & $0.027$ \\
+Mode recall & $\mathbf{0.84\pm0.03}$ & $0.73$ & $0.00$ & $0.00$ \\
+Diversity (curv.\ space) & $\mathbf{28.2\pm0.2}$ & $9.5$ & $0.0$ & $0.0$ \\
+Obstacle success & $\mathbf{0.978\pm0.002}$ & $0.960$ & $0.040$ & $0.018$ \\
+Query time (ms/target) & $38.6\pm4.9$ & $395$ & $\mathbf{0.013}$ & $0.022$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:core} summarizes the four core experiments. \textbf{E1
+(accuracy):} best-of-$K$ diffusion reaches $0.44\,$mm mean tip error with
+$100\%$ success; the deterministic MLP, structurally limited to the
+conditional mean, plateaus at $13.4\,$mm, and the MDN does not improve on
+it. The classical grad-IK reference reaches $0.23\,$mm ($99.4\%$)---when the
+true model is available to optimize through at query time, classical
+optimization is fully competitive on accuracy.
+\textbf{E2 (multimodality):} against enumerated ground-truth solution sets,
+diffusion recovers $0.84\pm0.03$ of modes; both baselines recover none---the
+MLP because it is deterministic, and the MDN not through classic component
+collapse but because no component is accurate enough: mode recall and
+diversity are computed over \emph{successful} samples only, and the MDN
+almost never produces one. Per-component analysis rules out a training
+pathology---NLL decreases monotonically at every epoch, no variance reaches
+its clamp floor, and $7.8$ of $8$ components remain effective---yet even the
+\emph{best} component mean per target carries $7.5\,$mm error (median
+component $9.2\,$mm) against the $5\,$mm tolerance, and sampling with the
+learned $\sigma$ smears this further. Nor is it a tuning artifact: sweeping
+the component count over $\{4,8,16,32\}$ improves best-of-$K$ error only
+from $18.7$ to $14.8\,$mm---never surpassing the plain MLP---and mode recall
+remains exactly zero at every setting. grad-IK's random restarts, by
+contrast, \emph{do} recover modes (recall $0.73$)---multimodality does not
+require learning---though with a third of diffusion's solution diversity
+($9.5$ vs.\ $28.2$). \textbf{E3 (downstream value):} when success requires \emph{any} of
+$K$ samples to be both accurate and collision-free among random obstacles,
+diffusion succeeds on $97.8\%$ of trials vs.\ $4.0\%$ (MLP)---redundancy is
+only exploitable if the model can represent it. \textbf{E4 (cost):}
+$38.6\,$ms per target for a batch of 32 samples on CPU, versus $395\,$ms
+for grad-IK---and, more fundamentally, grad-IK requires the differentiable
+simulator in the loop at every query, whereas the learned methods answer
+from samples of the plant alone. That amortization property is exactly what
+Sec.~\ref{sec:transfer} puts under stress. With three seeds,
+formal hypothesis testing adds little; the separations are instead
+unambiguous by inspection: on every metric in Table~\ref{tab:core} the
+\emph{worst} diffusion seed outperforms the \emph{best} baseline seed---for
+tip error, $0.49$ vs.\ $13.33\,$mm, a gap exceeding $400\times$ the
+across-seed standard deviation.
+
+Three ablations support the protocol: guidance weight has an inverted-U
+optimum at $1.5$ (both accuracy and diversity collapse beyond ${\sim}3$);
+accuracy and recall saturate by ${\sim}20$ DDIM steps (a $3\times$ speedup
+over 50 steps at no measurable cost); and performance saturates by
+${\sim}0.5$--$1\times10^5$ training samples (Fig.~\ref{fig:scaling}).
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{fig_scaling.png}
+\caption{Dataset-size ablation (single seed). (a) Best-of-$K$ tip error and
+(b) mode recall vs.\ training-set size; both saturate by
+${\sim}0.5$--$1\times10^5$ samples.}
+\label{fig:scaling}
+\end{figure}
+
+\section{The Advantage Is Redundancy, Specifically}
+\label{sec:mechanism}
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.95\textwidth]{fig_redundancy.png}
+\caption{The diffusion advantage tracks actuation redundancy. (a) Replacing
+the 3-D tip target with a 24-D whole-shape target removes most of the
+redundancy: sampled diversity collapses ${\sim}85\times$ ($28.16\pm0.22$ to
+$0.346\pm0.022$; mean $\pm$ std, 3 seeds). (b) Increasing the number of
+segments (single seed per morphology) widens the diffusion--MLP accuracy gap;
+at six segments the obstacle-task gap reaches $100\%$ vs.\ $1\%$.}
+\label{fig:redundancy}
+\end{figure*}
+
+If the advantage in Table~\ref{tab:core} is redundancy resolution, it should
+shrink when redundancy is removed and grow when redundancy is added. Both
+predictions hold (Fig.~\ref{fig:redundancy}).
+
+\textbf{Removing redundancy: shape conditioning.} Conditioning the same
+models on the full 24-D body shape (eight backbone points) instead of the
+3-D tip pins down almost the entire configuration. Diffusion's sampled
+diversity collapses from $28.16\pm0.22$ to $0.346\pm0.022$
+(${\sim}85\times$), and the MLP's accuracy disadvantage shrinks from
+${\sim}30\times$ ($13.4$ vs.\ $0.44\,$mm) to ${\sim}3\times$ ($0.49$ vs.\
+$0.16\,$mm), with both models at $100\%$ success (3 seeds). When there is
+one answer, a deterministic regressor is nearly as good; diffusion's edge
+is specifically the multimodal case.
+
+\textbf{Adding redundancy: morphology.} Training fresh models on two- and
+six-segment variants of the same arm family (tolerance scaled to $2\%$ of
+arm length), the MLP's error grows from $1.7\,$mm (2 seg, $75\%$ success) to
+$33.9\,$mm (6 seg, $1.2\%$ success) while diffusion degrades gracefully
+($0.11$ to $0.92\,$mm, ${\geq}99.8\%$ success); the obstacle-task gap at six
+segments is $100\%$ vs.\ $1\%$---the largest in the study. More redundancy
+means worse mode averaging and more collision-free alternatives that only a
+multimodal model can offer.
+
+\section{Does It Survive Model Mismatch?}
+\label{sec:transfer}
+
+\subsection{The transfer collapse}
+Executing the PCC-trained diffusion model's actuations on the Cosserat-rod
+simulator collapses accuracy from $0.67\pm0.03\,$mm ($100\%$ success) to
+$139.9\pm1.8\,$mm with $0\%$ success on every seed ($n{=}20$ held-out
+targets, $K{=}8$); the MLP collapses similarly ($13.8 \rightarrow
+164.4\,$mm). The learned inverse map is simulator-specific. The rest of this
+section quantifies what does---and does not---recover the loss;
+Table~\ref{tab:synthesis} summarizes.
+
+\begin{table}[t]
+\caption{Recovery mechanisms at a glance (Elastica-domain performance;
+best configuration of each mechanism).}
+\label{tab:synthesis}
+\centering
+\footnotesize
+\setlength{\tabcolsep}{2.2pt}
+\begin{tabular}{lccl}
+\toprule
+Mechanism & err (mm) & succ. & Cost / caveat \\
+\midrule
+none (PCC-trained) & $139.9\pm1.8$ & $0\%$ & --- \\
+best-of-32 selection & $130.4$ & $0\%$ & 32 target queries/target \\
+\; + diversity order & $-6.7$ at $m{=}8$ & $0\%$ & same queries; $p{\approx}0.002$ \\
+guided sampling & $129.0$ & $0\%$ & 400 labels; suggestive \\
+gain randomization & $140.6$ & $0\%$ & degrades source; no gain \\
+fine-tune, $0\%$ mix & $\mathbf{67.1\pm1.0}$ & $\mathbf{10\%}$ & forgets source ($133\,$mm) \\
+fine-tune, $\geq 5\%$ mix & $\geq 133.8$ & $\leq 10\%$ & retains source, forfeits gain \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Selection under a query budget}
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{fig_query_budget.png}
+\caption{Candidate selection under an Elastica query budget ($n{=}45$
+targets, $K{=}32$ candidates, mean $\pm$ SEM). Curves shown are independent
+runs of the two orderings; the statistical comparison in the text uses a
+\emph{paired} design (one candidate set per target, both orderings reindex
+the same cached per-candidate errors), which is significant at $m{=}8$ and
+$m{=}16$ ($t{=}3.34$ and $3.21$, $p{\approx}0.002$).}
+\label{fig:budget}
+\end{figure}
+
+A multimodal model offers something a deterministic one cannot: $K$ diverse
+candidates to test against the target domain. Spending a budget of $m$
+Elastica evaluations and keeping the best candidate reduces mean error from
+$161.5$ ($m{=}1$) to $130.4\,$mm ($m{=}32$), improving 44 of 45 targets
+(Fig.~\ref{fig:budget})---real and broad-based, but to be blunt about its
+practical value: success stays at $0\%$, the gap to tolerance remains
+${\sim}26\times$, and under this budget selection never actually solves a
+single target. \emph{How} the
+budget is spent matters: a greedy farthest-point ordering in curvature space
+(seeded from the same most-confident candidate, so $m{=}1$ is identical)
+beats confidence ordering by $6.7\,$mm at $m{=}8$ (paired $t{=}3.34$,
+$p{\approx}0.002$; 24/12 targets) and $3.3\,$mm at $m{=}16$ ($t{=}3.21$).
+Notably, neither candidate diversity itself nor local PCC Jacobian
+sensitivity predicts \emph{which} targets benefit: at $n{=}45$---sized to
+detect $r{\geq}0.41$ at $80\%$ power, i.e., the effect size an $n{=}20$
+pilot had suggested---the observed correlations are $r{=}0.20$ ($p{=}0.19$)
+and $r{=}0.02$ ($p{=}0.88$). This rules out the pilot's effect but not
+smaller ones; the pilot's non-replication is a caution we report rather
+than hide.
+
+\subsection{Guiding generation toward the target domain}
+Beyond selecting among candidates, we steer generation itself: a small
+regressor trained on 400 Elastica-labeled candidates (25 targets) predicts
+transfer error from (candidate, target), and its gradient nudges the
+denoised estimate at every DDIM step, as in classifier
+guidance~\cite{dhariwal2021diffusion}. On 15 \emph{held-out} targets this
+improves best-of-16 error from $134.6$ to $129.0\,$mm (paired
+$5.6\pm2.5\,$mm, $t{=}2.27$, $p{\approx}0.04$; 11/15 targets). This is
+generalization to unseen targets, but it is the weakest effect in the
+paper: all $p$-values here are uncorrected, and across the family of
+${\sim}$six hypothesis tests we report, only the ordering result
+($p{\approx}0.002$) survives a Bonferroni correction---we therefore read
+this one as \emph{suggestive} rather than confirmed.
+Combining it with diversity-ordering adds nothing: guidance
+\emph{concentrates} the candidate distribution while diversity-ordering
+\emph{spreads} selection, and a $2\times2$ factorial shows the mechanisms in
+tension rather than compounding.
+
+\subsection{Training-time levers}
+\textbf{Domain randomization fails.} Randomizing the curvature gain
+per-sample ($\mathcal{U}(15,35)$) during data generation costs PCC accuracy
+($0.44 \rightarrow 2.18\,$mm) and yields \emph{zero} transfer improvement
+($140.6 \rightarrow 140.6\,$mm)---consistent with the mismatch being
+directional rather than magnitude-based: randomizing how much the arm bends
+cannot fix a discrepancy in which direction it bends.
+
+\textbf{Target-domain data works---at a price.}
+\begin{table}[t]
+\caption{Fine-tuning on $10^4$ Elastica-simulated samples at six PCC-data
+mixing ratios (mean $\pm$ std, 3 seeds; held-out targets).}
+\label{tab:cliff}
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3.5pt}
+\begin{tabular}{lcccc}
+\toprule
+PCC mix & PCC err (mm) & succ. & Elastica err (mm) & succ. \\
+\midrule
+none (baseline) & $0.67\pm0.03$ & $100\%$ & $139.9\pm1.8$ & $0\%$ \\
+$0\%$  & $133.4\pm1.2$ & $0\%$ & $\mathbf{67.1\pm1.0}$ & $\mathbf{10\%}$ \\
+$5\%$  & $30.7\pm0.6$ & $6\%$ & $133.8\pm3.1$ & $8\%$ \\
+$10\%$ & $21.7\pm0.5$ & $17\%$ & $143.2\pm4.9$ & $8\%$ \\
+$15\%$ & $16.7\pm0.2$ & $26\%$ & $146.0\pm3.4$ & $8\%$ \\
+$20\%$ & $11.6\pm0.3$ & $51\%$ & $148.0\pm1.6$ & $10\%$ \\
+$50\%$ & $3.0\pm0.4$ & $96\%$ & $152.3\pm0.4$ & $3\%$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{fig_finetune_cliff.png}
+\caption{The retention--transfer cliff (mean $\pm$ std, 3 seeds; six mixing
+ratios). Fine-tuning the PCC-pretrained model on $10^4$ Elastica samples:
+retention (PCC error) improves smoothly and monotonically as PCC data is
+mixed back in, but the transfer gain collapses almost entirely by the first
+grid point ($5\%$ PCC data). There is no data-mixing sweet spot.}
+\label{fig:cliff}
+\end{figure}
+
+Fine-tuning the pretrained model \emph{exclusively} on $10^4$
+Elastica-simulated samples yields the only nonzero transfer success of any
+method---$67.1\pm1.0\,$mm and $10\%$ success ($2/20$ targets on each seed;
+recall the $5\%$ metric granularity)---at the cost of catastrophic
+forgetting~\cite{kirkpatrick2017overcoming} of the source domain ($0.67
+\rightarrow 133.4\,$mm). Mixing PCC data back into fine-tuning batches
+restores retention smoothly and monotonically across all six ratios
+($133.4 \rightarrow 30.7 \rightarrow 21.7 \rightarrow 16.7 \rightarrow 11.6
+\rightarrow 3.0\,$mm), but the transfer gain does not degrade in step: the
+fine sweep \emph{locates} the collapse below the first grid point---at just
+$5\%$ PCC data, transfer error has already rebounded from $67.1$ to
+$133.8\pm3.1\,$mm, forfeiting ${\sim}92\%$ of the improvement over the
+no-fine-tune baseline, and it drifts only slowly thereafter
+(Table~\ref{tab:cliff}, Fig.~\ref{fig:cliff}). The values at intermediate
+ratios are stable across seeds (std $\leq 4.9\,$mm), so this is not an
+unlucky training run. Retention and transfer sit on a \emph{cliff} whose
+edge lies below $5\%$ mixing, not on a smooth tradeoff curve---under
+per-batch data mixing there is no sweet spot, suggesting parameter-level
+regularization (\eg\ elastic weight
+consolidation~\cite{kirkpatrick2017overcoming}) as the necessary next
+mechanism. (Binary success has $5\%$ granularity at
+$n_\text{targets}{=}20$; mean error carries the statistical weight
+throughout.)
+
+\section{Limitations}
+\label{sec:limitations}
+(1) \textbf{Simulation-only.} Both domains are simulators; this is a
+controlled sim-to-sim study, and no claim is made about physical hardware.
+(2) \textbf{Simplified target-domain actuation.} The Cosserat-rod arm applies
+idealized per-segment couples and quasi-static settling; it is a harder test
+domain, not a validated model of a specific physical arm. (3)
+\textbf{Statistical coverage is uneven.} Core results, the shape-conditioning
+study, the baseline transfer collapse, and the fine-tuning grid carry
+three-seed statistics; the query-budget, ordering, and guidance experiments
+use one trained model (with within-experiment pairing across 15--45 targets),
+the hyperparameter, dataset-size, and morphology studies are likewise
+single-seed, and the grad-IK reference is a single optimization run per
+target.
+(4) \textbf{Mode-enumeration hyperparameters} were calibrated for the
+four-segment arm; morphology results therefore report accuracy and
+obstacle-task metrics only. (5) \textbf{Success-rate granularity} in transfer
+experiments is $5\%$ ($n_\text{targets}{=}20$).
+
+\section{Conclusion}
+For the PCC-representable pneumatic continuum arms studied here, multimodal
+diffusion IK delivers a real, mechanistically attributable advantage---it is
+redundancy resolution, growing with segment count and vanishing when the
+target specifies the whole shape---but the learned inverse map itself does
+not survive a change of dynamics model.
+Inference-time selection and guidance recover a bounded fraction of the loss;
+synthetic gain randomization recovers none; and target-domain fine-tuning
+buys genuine transfer only at a sharp retention cliff that data mixing cannot
+smooth. For simulation-trained soft-arm IK, the practical path forward is not
+better sampling from a source-domain model but mechanisms that let a small
+amount of target-domain data reshape the model without erasing it.
+
+\section*{Reproducibility}
+\ifanonymous
+All code, configuration, per-experiment result files, and the
+$10^4$-sample Elastica dataset are available in an anonymized repository:
+\url{https://anonymous.4open.science/r/REPLACE-BEFORE-SUBMISSION}.
+\else
+All code, configuration, per-experiment result files, and the
+$10^4$-sample Elastica dataset are available at
+\url{https://github.com/adhvayjagadeesh/CCIR-Research-Project}.
+\fi

@@ -1,0 +1,51 @@
+% RA-L INITIAL-SUBMISSION WRAPPER (double-anonymous review copy).
+% Per RA-L Information for Authors, initial submissions use the IEEE
+% CONFERENCE format (ieeeconf.cls, vendored here from the official RAS
+% PaperCept support files); the journal format (ral_draft.tex) is only for
+% the accepted/final version. This wrapper is permanently anonymous.
+% Manuscript content lives in ral_body.tex - edit there. Keep the \title
+% below in sync with ral_draft.tex.
+%
+% Before submitting: paste the anonymous.4open.science mirror URL at the
+% marked placeholder in ral_body.tex, then build:
+%   pdflatex ral_submission && bibtex ral_submission && pdflatex ral_submission (x2)
+% and run PaperCept's PDF compliance test on the output.
+\documentclass[letterpaper, 10pt, conference]{ieeeconf}
+\IEEEoverridecommandlockouts
+
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage[colorlinks=false]{hyperref}
+
+\newif\ifanonymous
+\anonymoustrue % the submission copy is always anonymous
+
+\newenvironment{paperkeywords}{\begin{keywords}}{\end{keywords}}
+
+% ieeeconf.cls descends from IEEEtran v1.6, which predates \IEEEPARstart
+% (it has \PARstart); shim so the shared body compiles under both classes
+\providecommand{\IEEEPARstart}[2]{\PARstart{#1}{#2}}
+
+\graphicspath{{figures/}}
+
+\newcommand{\ie}{i.e.}
+\newcommand{\eg}{e.g.}
+
+\begin{document}
+
+\title{\LARGE \bf When Does Multimodal Diffusion Inverse Kinematics Help
+Soft Continuum Arms---and Does It Survive Model Mismatch?}
+
+\author{Anonymous submission}
+
+\maketitle
+\thispagestyle{empty}
+\pagestyle{empty}
+
+\input{ral_body}
+
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+\end{document}
