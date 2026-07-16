@@ -51,6 +51,15 @@ guidance=1.5 - both retuned from an ablation, see below).
 All three claims (E1 parity-or-better, E2 multimodality, E3 downstream value)
 hold with tight error bars and large, stable gaps over both baselines.
 
+**Classical baseline (`results_gradik.json`, restart-init fix applied - see
+honesty notes):** grad-IK (32 random restarts, Adam through the
+differentiable PCC model, 300 iters) reaches 0.013mm at 100% success,
+recall 0.85, diversity 29.0, obstacle success 0.98, at ~430ms/target
+(vs. diffusion's 38.6ms batched / ~84ms single-target). With the simulator
+in hand at query time, classical optimization matches diffusion on every
+task metric; diffusion's structural advantage is answering from
+input-output samples alone, which is what the transfer studies stress.
+
 **Ablations (`scripts/ablate.py`):** guidance weight follows the expected
 inverted-U (0.0 fails to converge; >=3.0 over-guides and collapses accuracy
 *and* diversity; 1.0-2.0 is the plateau; default 1.5 sits at the peak, 100%
@@ -317,8 +326,11 @@ degrade gracefully in step - the fine sweep (added for the RA-L revision,
 addressing the external critique that 3 coarse points couldn't distinguish
 a cliff from a smooth tradeoff) *locates* the collapse below the first grid
 point: at just 5% PCC data, transfer error has already rebounded from
-67.1mm to 133.8mm, forfeiting ~92% of the improvement over the 139.9mm
-no-fine-tune baseline, then drifts only slowly (143 -> 146 -> 148 ->
+67.1mm to 133.8mm, forfeiting ~80% of the improvement over the
+same-target-set no-fine-tune baseline (151.1 +/- 2.5mm on the seed-55555
+held-out targets, `baseline_transfer_seed{0,1,2}_heldout55555.json`; the
+oft-quoted 139.9mm is the transfer-collapse experiment's different
+20-target draw), then drifts only slowly (143 -> 146 -> 148 ->
 152mm). Intermediate-ratio values are stable across seeds (std <= 4.9mm),
 so this is not an unlucky run. **Conclusion: retention and transfer sit on
 a cliff whose edge lies below 5% mixing** - the transfer signal needs
@@ -458,12 +470,26 @@ python scripts/query_budget_correlation.py --query_budget_results query_budget_r
   identical deterministic 1.5s protocol, so all results remain internally
   valid as transfer to a fixed dynamic-snapshot domain - but earlier
   "quasi-static equilibrium" descriptions were wrong and have been corrected
-  in the paper and code. The same robustness pass also verified grad-IK's
-  compute/accuracy tradeoff (matching diffusion's accuracy costs ~10x its
-  query time), grad-IK restart-RNG stability (std <0.01mm), and E2's
+  in the paper and code. The same robustness pass also covers grad-IK's
+  compute/accuracy tradeoff, restart-RNG stability (std <0.005mm), and E2's
   hyperparameter sensitivity (learned baselines are zero at every eps/radius
-  setting; diffusion exceeds grad-IK at 7 of 9, with both exceptions at the
-  strictest match radius).
+  setting; diffusion and grad-IK trade the lead - diffusion higher at 3 of 9,
+  grad-IK at 5, one tie).
+* **grad-IK's restart initialization was buggy and fixed post-hoc
+  (2026-07-16, fifth adversarial pass):** the original code drew Adam's
+  *logits* ~ U(0,1), confining initial pressures to [0.5, 0.73] and
+  artificially limiting which IK modes the restarts could reach. With the
+  fix (restarts uniform over pressure space, logit-reparameterized;
+  `pcc_arm.grad_ik`), grad-IK improves from 0.23mm/recall 0.73/diversity
+  9.5 to **0.013mm at 100% success, recall 0.85, diversity 29.0, obstacle
+  0.98** (`results_gradik.json`) - on par with diffusion on every task
+  metric. The honest comparison is therefore: diffusion's advantage over
+  *classical optimization* is only cost (~5x single-target, ~11x batched;
+  grad-IK at a tuned 100-iteration budget is within a small factor) and not
+  needing the simulator at query time; its advantage over *learned*
+  baselines (which share that amortization property) is unchanged and
+  remains the paper's subject. All grad-IK numbers in the paper and this
+  README are from the fixed init.
 * Success bar (from prior discussion) is met for the *primary* PCC-only
   results: E1 well within ~1-2% of arm length; E2 recall 0.835 (target was
   >= 0.8-0.9); E3 a large gap. It is **not** met once Elastica model mismatch

@@ -1,4 +1,4 @@
-"""EXPERIMENTAL: high-fidelity Cosserat-rod arm via PyElastica.
+"""High-fidelity Cosserat-rod arm via PyElastica.
 
 This mirrors the PCCArm interface (forward(q) -> {"backbone", "tip"}) but runs a
 PyElastica simulation per sample: the arm is one Cosserat rod split into
@@ -13,10 +13,9 @@ Notes:
   * ~1000x slower than PCCArm; use it to (a) generate a smaller high-fidelity
     test set, (b) run the "PCC-trained -> Cosserat-evaluated" transfer study,
     which reviewers like because it probes model-mismatch robustness.
-  * This module is a scaffold written against PyElastica's documented API
-    (BaseSystemCollection mixins, CosseratRod.straight_rod, analytical damper).
-    It has NOT been executed in this environment — expect to adjust minor API
-    details against your installed pyelastica version.
+  * Verified against pyelastica 1.0.0 (uniform pressures stay straight,
+    asymmetric pressures bend as expected); the only fix needed from the
+    original scaffold was progress_bar=False on ea.integrate.
 """
 
 from __future__ import annotations

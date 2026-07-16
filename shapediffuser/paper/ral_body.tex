@@ -14,9 +14,10 @@ advantage survive a change of dynamics model? On a piecewise-constant-curvature
 (PCC) pneumatic arm, a conditional diffusion model matches a deterministic
 baseline where redundancy is absent and dominates where it is present
 (mode recall $0.84\pm0.03$ vs.\ exactly $0$; obstacle-avoidance success
-$97.8\%$ vs.\ $4.0\%$; three seeds), and delivers accuracy comparable to a
-strong optimization-based solver at a tenth of its query cost, without
-needing the simulator at query time. Two controlled manipulations show the
+$97.8\%$ vs.\ $4.0\%$; three seeds), and matches a strong optimization-based
+solver's task success, mode recall, and solution diversity at a
+$5$--$11\times$ lower query cost, without needing the simulator at query
+time. Two controlled manipulations show the
 advantage is specifically a redundancy effect: conditioning on the whole arm
 shape instead of the tip collapses sampled diversity by ${\sim}80\times$ and
 shrinks the baseline's disadvantage from ${\sim}30\times$ to ${\sim}3\times$,
@@ -77,9 +78,10 @@ Our contributions:
   IK dominates learned MLP and mixture-density-network (MDN) baselines,
   recovers $0.84\pm0.03$ of ground-truth IK modes where both
   recover none, and matches a classical random-restart optimization solver
-  on accuracy at a tenth of its query cost without simulator access at query
-  time---translating into a $97.8\%$ vs.\ $4.0\%$ obstacle-avoidance gap
-  over the learned baselines (Sec.~\ref{sec:core}).
+  on task success, mode recovery, and solution diversity at a
+  $5$--$11\times$ lower query cost (single-target vs.\ batched) without
+  simulator access at query time---translating into a $97.8\%$ vs.\ $4.0\%$
+  obstacle-avoidance gap over the learned baselines (Sec.~\ref{sec:core}).
   \item \textbf{The mechanism, isolated.} Two controlled manipulations of
   redundancy---conditioning on the whole body shape, and varying the number
   of segments---show the advantage is specifically redundancy resolution,
@@ -197,8 +199,10 @@ the workspaces are similarly sized).
 \caption{Core comparison on the PCC arm (mean $\pm$ std, 3 seeds; $K{=}32$).
 Mode recall and diversity are computed over successful samples only.
 grad-IK is a single optimization run per target (no training, hence no
-seeds; restart-RNG variance is negligible, std ${<}0.01\,$mm over three RNG
-seeds) and requires the differentiable simulator at query time.}
+seeds; restart-RNG variance is negligible over three RNG seeds) and
+requires the differentiable simulator at query time. Learned-method query
+times amortize a 64-target batch; a single-target diffusion query costs
+${\sim}84\,$ms.}
 \label{tab:core}
 \centering
 \scriptsize
@@ -207,13 +211,13 @@ seeds) and requires the differentiable simulator at query time.}
 \toprule
  & Diffusion & grad-IK & MLP & MDN \\
 \midrule
-Tip err.\ best-of-$K$ (mm) & $0.44\pm0.03$ & $\mathbf{0.23}$ & $13.4\pm0.0$ & $17.3\pm0.2$ \\
+Tip err.\ best-of-$K$ (mm) & $0.44\pm0.03$ & $\mathbf{0.013}$ & $13.4\pm0.0$ & $17.3\pm0.2$ \\
 Tip err.\ single sample (mm) & $\mathbf{1.69\pm0.15}$ & --- & $13.4\pm0.0$ & $83.6\pm2.7$ \\
-Success @ 5 mm & $\mathbf{1.00}$ & $0.994$ & $0.060$ & $0.027$ \\
-Mode recall & $\mathbf{0.84\pm0.03}$ & $0.73$ & $0.00$ & $0.00$ \\
-Diversity (curv.\ space) & $\mathbf{28.2\pm0.2}$ & $9.5$ & $0.0$ & $0.0$ \\
-Obstacle success & $\mathbf{0.978\pm0.002}$ & $0.960$ & $0.040$ & $0.018$ \\
-Query time (ms/target) & $38.6\pm4.9$ & $395$ & $\mathbf{0.013}$ & $0.022$ \\
+Success @ 5 mm & $\mathbf{1.00}$ & $\mathbf{1.00}$ & $0.060$ & $0.027$ \\
+Mode recall & $0.84\pm0.03$ & $\mathbf{0.85}$ & $0.00$ & $0.00$ \\
+Diversity (curv.\ space) & $28.2\pm0.2$ & $\mathbf{29.0}$ & $0.0$ & $0.0$ \\
+Obstacle success & $0.978\pm0.002$ & $\mathbf{0.980}$ & $0.040$ & $0.018$ \\
+Query time (ms/target) & $38.6\pm4.9$ & $428$ & $\mathbf{0.013}$ & $0.022$ \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -225,9 +229,9 @@ conditional mean, plateaus at $13.4\,$mm, and the MDN does not improve on
 it. The advantage is not merely the $K{=}32$ shots: a \emph{single}
 diffusion sample reaches $1.69\pm0.15\,$mm---still $8\times$ better than
 the MLP---while a single MDN draw lands at $84\,$mm. The classical grad-IK
-reference reaches $0.23\,$mm ($99.4\%$)---when the true model is available
-to optimize through at query time, classical optimization is fully
-competitive on accuracy.
+reference reaches $0.013\,$mm at $100\%$ success---when the true model is
+available to optimize through at query time, classical optimization is the
+accuracy ceiling.
 \textbf{E2 (multimodality):} against enumerated ground-truth solution sets,
 diffusion recovers $0.84\pm0.03$ of modes; both baselines recover none---the
 MLP because it is deterministic, and the MDN not through classic component
@@ -242,27 +246,28 @@ learned $\sigma$ smears this further. Nor is it a tuning artifact: sweeping
 the component count over $\{4,8,16,32\}$ improves best-of-$K$ error only
 from $18.7$ to $14.8\,$mm---never surpassing the plain MLP---and mode recall
 remains exactly zero at every setting. grad-IK's random restarts, by
-contrast, \emph{do} recover modes (recall $0.73$)---multimodality does not
-require learning---though with a third of diffusion's solution diversity
-($9.5$ vs.\ $28.2$). These conclusions are not artifacts of the enumeration
+contrast, \emph{do} recover modes (recall $0.85$) with solution diversity
+on par with diffusion's ($29.0$ vs.\ $28.2$)---multimodality requires
+representing multiple candidates, not learning; the learned baselines fail
+because they cannot. These conclusions are not artifacts of the enumeration
 hyperparameters: across a $3{\times}3$ sensitivity grid
 ($\varepsilon\,{\in}\,\{10,12,14\}$, match radius ${\in}\,\{10,15,20\}$),
 absolute recall shifts with the radius---which \emph{defines} mode
-recovery---but the learned baselines stay at zero everywhere, and diffusion
-exceeds grad-IK at seven of nine settings (both exceptions fall at the
-strictest match radius, where grad-IK's optimized solutions sit closest to
-mode centers). \textbf{E3 (downstream value):} when success requires \emph{any} of
+recovery---but the learned baselines stay at zero everywhere, while
+diffusion and grad-IK trade the lead (diffusion higher at three settings,
+grad-IK at five, one tie): the two multimodal methods are on par at every
+setting of the enumeration. \textbf{E3 (downstream value):} when success requires \emph{any} of
 $K$ samples to be both accurate and collision-free among random obstacles,
 diffusion succeeds on $97.8\%$ of trials vs.\ $4.0\%$ (MLP)---redundancy is
 only exploitable if the model can represent it. \textbf{E4 (cost):}
-$38.6\,$ms per target for a batch of 32 samples on CPU, versus $395\,$ms
-for grad-IK. The gap is not an untuned-budget artifact: cutting grad-IK to
-100 iterations reduces its cost to ${\sim}130\,$ms but degrades it to
-$1.2$--$1.6\,$mm at $91$--$95\%$ success, below diffusion's operating
-point---matching diffusion's accuracy costs ${\sim}10\times$ its query
-time. More fundamentally, grad-IK requires the differentiable
-simulator in the loop at every query, whereas the learned methods answer
-from input--output samples alone, with no model access at query time. (One
+$38.6\,$ms per target (batch of 32 samples, CPU, 64 targets batched;
+${\sim}84\,$ms for a single-target query) versus $428\,$ms for grad-IK---a
+$5$--$11\times$ gap. A tuned budget narrows it: grad-IK at 100 iterations
+(${\sim}130\,$ms) still reaches $0.30\,$mm at $100\%$ success, so with the
+simulator in hand, classical optimization is cost-competitive within a
+small factor. The learned methods' advantage is different in kind: they
+answer from input--output samples alone, with no differentiable simulator
+in the loop at query time. (One
 caveat applies to both: best-of-$K$ reporting assumes a verifier to pick
 the successful candidate---here $K$ forward evaluations, versus grad-IK's
 $K{\times}300$ forward--backward passes; in deployment that role falls to
@@ -315,8 +320,9 @@ models on the full 24-D body shape (eight backbone points) instead of the
 3-D tip pins down almost the entire configuration. Diffusion's sampled
 diversity collapses from $28.16\pm0.22$ to $0.346\pm0.022$
 (${\sim}80\times$), and the MLP's accuracy disadvantage shrinks from
-${\sim}30\times$ ($13.4$ vs.\ $0.44\,$mm) to ${\sim}3\times$ ($0.49$ vs.\
-$0.16\,$mm), with both models at $100\%$ success (3 seeds). When there is
+${\sim}30\times$ ($13.4$ vs.\ $0.44\,$mm tip error) to ${\sim}3\times$
+($0.49$ vs.\ $0.16\,$mm mean per-backbone-point error, the shape task's
+accuracy metric), with both models at $100\%$ success (3 seeds). When there is
 one answer, a deterministic regressor is nearly as good; diffusion's edge
 is specifically the multimodal case.
 
@@ -343,7 +349,8 @@ Table~\ref{tab:synthesis} summarizes.
 
 \begin{table}[t]
 \caption{Recovery mechanisms at a glance (Elastica-domain performance; best
-configuration of each mechanism). ``Queries'' are target-domain (Elastica)
+configuration of each mechanism; each row uses its own study's held-out
+target set, 15--45 targets). ``Queries'' are target-domain (Elastica)
 evaluations per target; the top-1 row spends none. The $139.9\,$mm
 transfer-collapse figure quoted elsewhere corresponds to best-of-8
 selection and is consistent with this study's $m{=}8$ point
@@ -431,7 +438,11 @@ cannot fix a discrepancy in which direction it bends.
 \textbf{Target-domain data works---at a price.}
 \begin{table}[t]
 \caption{Fine-tuning on $10^4$ Elastica-simulated samples at six PCC-data
-mixing ratios (mean $\pm$ std, 3 seeds; held-out targets).}
+mixing ratios (mean $\pm$ std, 3 seeds). Common protocols across all rows,
+baseline included: PCC columns use the E1 evaluation (512 targets,
+$K{=}32$); Elastica columns use 20 held-out targets, $K{=}8$. This target
+draw is harder than the transfer-collapse experiment's ($151.1$ vs.\
+$139.9\,$mm at baseline).}
 \label{tab:cliff}
 \centering
 \footnotesize
@@ -440,7 +451,7 @@ mixing ratios (mean $\pm$ std, 3 seeds; held-out targets).}
 \toprule
 PCC mix & PCC err (mm) & succ. & Elastica err (mm) & succ. \\
 \midrule
-none (baseline) & $0.67\pm0.03$ & $100\%$ & $139.9\pm1.8$ & $0\%$ \\
+none (baseline) & $0.44\pm0.03$ & $100\%$ & $151.1\pm2.5$ & $0\%$ \\
 $0\%$  & $133.4\pm1.2$ & $0\%$ & $\mathbf{67.1\pm0.9}$ & $\mathbf{10\%}$ \\
 $5\%$  & $30.7\pm0.6$ & $6\%$ & $133.8\pm3.1$ & $8\%$ \\
 $10\%$ & $21.7\pm0.5$ & $17\%$ & $143.2\pm4.9$ & $8\%$ \\
@@ -464,11 +475,12 @@ grid point ($5\%$ PCC data). There is no data-mixing sweet spot.}
 
 Fine-tuning the pretrained model \emph{exclusively} on $10^4$
 Elastica-simulated samples (20 epochs, learning rate $3{\times}10^{-5}$;
-mixing ratios below are enforced per batch by weighted sampling) yields the
+mixing ratios below are realized in expectation by weighted sampling within
+each batch) yields the
 only nonzero transfer success of any
 method---$67.1\pm0.9\,$mm and $10\%$ success ($2/20$ targets on each seed;
 recall the $5\%$ metric granularity)---at the cost of catastrophic
-forgetting~\cite{kirkpatrick2017overcoming} of the source domain ($0.67
+forgetting~\cite{kirkpatrick2017overcoming} of the source domain ($0.44
 \rightarrow 133.4\,$mm). To be plain about magnitude: even this best
 transfer result remains ${\sim}13\times$ the success tolerance in mean
 error; no method in this paper solves the transferred task. Mixing PCC data back into fine-tuning batches
@@ -477,8 +489,9 @@ restores retention smoothly and monotonically across all six ratios
 \rightarrow 3.0\,$mm), but the transfer gain does not degrade in step: the
 fine sweep \emph{locates} the collapse below the first grid point---at just
 $5\%$ PCC data, transfer error has already rebounded from $67.1$ to
-$133.8\pm3.1\,$mm, forfeiting ${\sim}92\%$ of the improvement over the
-no-fine-tune baseline, and it drifts only slowly thereafter
+$133.8\pm3.1\,$mm, forfeiting ${\sim}80\%$ of the improvement over the
+same-target no-fine-tune baseline ($151.1\pm2.5\,$mm), and it drifts only
+slowly thereafter
 (Table~\ref{tab:cliff}, Fig.~\ref{fig:cliff}). The values at intermediate
 ratios are stable across seeds (std $\leq 4.9\,$mm), so this is not an
 unlucky training run. Retention and transfer sit on a \emph{cliff} whose

@@ -169,8 +169,15 @@ def grad_ik(
 
     target_tip: (3,). Returns (n_restarts, q_dim) candidate solutions sorted by
     final tip error (best first).
+
+    Restarts are initialized uniformly over PRESSURE space (logit-transformed
+    so the sigmoid reparameterization reproduces them exactly). An earlier
+    version drew the logits themselves ~ U(0,1), which confines the initial
+    pressures to [0.5, 0.73] and materially understates the baseline's mode
+    coverage (recall 0.75 -> 0.80, solution diversity 9.3 -> 28 after the fix).
     """
-    q = torch.rand(n_restarts, arm.q_dim, device=arm.device, requires_grad=True)
+    p0 = torch.rand(n_restarts, arm.q_dim, device=arm.device).clamp(1e-4, 1 - 1e-4)
+    q = torch.logit(p0).requires_grad_(True)
     opt = torch.optim.Adam([q], lr=lr)
     tgt = target_tip.to(arm.device).unsqueeze(0)
     for _ in range(iters):
