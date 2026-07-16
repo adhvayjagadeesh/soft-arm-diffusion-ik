@@ -14,9 +14,9 @@ advantage survive a change of dynamics model? On a piecewise-constant-curvature
 (PCC) pneumatic arm, a conditional diffusion model matches a deterministic
 baseline where redundancy is absent and dominates where it is present
 (mode recall $0.84\pm0.03$ vs.\ exactly $0$; obstacle-avoidance success
-$97.8\%$ vs.\ $4.0\%$; three seeds), and matches a strong optimization-based
-solver on accuracy at a tenth of its query cost without needing the
-simulator at query time. Two controlled manipulations show the
+$97.8\%$ vs.\ $4.0\%$; three seeds), and delivers accuracy comparable to a
+strong optimization-based solver at a tenth of its query cost, without
+needing the simulator at query time. Two controlled manipulations show the
 advantage is specifically a redundancy effect: conditioning on the whole arm
 shape instead of the tip collapses sampled diversity by ${\sim}85\times$ and
 shrinks the baseline's disadvantage from ${\sim}30\times$ to ${\sim}3\times$,
@@ -171,13 +171,20 @@ finds no mode are excluded from recall averages.
 \textbf{High-fidelity domain.} The transfer domain is a Cosserat-rod
 simulation of the same arm in PyElastica~\cite{gazzola2018forward,
 zhang2019modeling}: one rod, 48 elements, per-segment constant internal
-couples derived from the same chamber pressures, damped to quasi-static
-equilibrium (${\sim}4\,$s of compute per evaluation). The two simulators
+couples derived from the same chamber pressures, integrated with linear
+damping from rest for a fixed $1.5\,$s horizon (${\sim}4\,$s of compute per
+evaluation). A convergence check shows the damped rod still oscillates at
+this horizon and beyond (tip shifts of $50$--$145\,$mm persist between
+horizons up to $9\,$s), so the transfer domain is a \emph{fixed,
+deterministic dynamic-snapshot protocol}---applied identically in every
+Elastica experiment, dataset, and label in this paper---rather than a
+static equilibrium. The two simulators
 agree exactly in the zero-curvature case---uniform pressures produce the
 identical straight configuration (tip at $[0,0,0.24]\,$m) in both---so the
 discrepancy lies in the bending response, not in trivial misalignment. A
 sweep over the couple gain further confirmed it is directional/structural
-rather than a scale mismatch: no gain setting aligns the two workspaces.
+rather than a scale mismatch: no tested gain---spanning two orders of
+magnitude around the default---aligns the two workspaces.
 
 \section{When Multimodality Helps}
 \label{sec:core}
@@ -186,6 +193,7 @@ rather than a scale mismatch: no gain setting aligns the two workspaces.
 \caption{Core comparison on the PCC arm (mean $\pm$ std, 3 seeds; $K{=}32$).
 Mode recall and diversity are computed over successful samples only.
 grad-IK is a single optimization run per target (no training, hence no
+seeds; restart-RNG variance is negligible, std ${<}0.01\,$mm over three RNG
 seeds) and requires the differentiable simulator at query time.}
 \label{tab:core}
 \centering
@@ -196,6 +204,7 @@ seeds) and requires the differentiable simulator at query time.}
  & Diffusion & grad-IK & MLP & MDN \\
 \midrule
 Tip err.\ best-of-$K$ (mm) & $0.44\pm0.03$ & $\mathbf{0.23}$ & $13.4\pm0.0$ & $17.3\pm0.2$ \\
+Tip err.\ single sample (mm) & $\mathbf{1.69\pm0.15}$ & --- & $13.4\pm0.0$ & $83.6\pm2.7$ \\
 Success @ 5 mm & $\mathbf{1.00}$ & $0.994$ & $0.060$ & $0.027$ \\
 Mode recall & $\mathbf{0.84\pm0.03}$ & $0.73$ & $0.00$ & $0.00$ \\
 Diversity (curv.\ space) & $\mathbf{28.2\pm0.2}$ & $9.5$ & $0.0$ & $0.0$ \\
@@ -209,9 +218,12 @@ Table~\ref{tab:core} summarizes the four core experiments. \textbf{E1
 (accuracy):} best-of-$K$ diffusion reaches $0.44\,$mm mean tip error with
 $100\%$ success; the deterministic MLP, structurally limited to the
 conditional mean, plateaus at $13.4\,$mm, and the MDN does not improve on
-it. The classical grad-IK reference reaches $0.23\,$mm ($99.4\%$)---when the
-true model is available to optimize through at query time, classical
-optimization is fully competitive on accuracy.
+it. The advantage is not merely the $K{=}32$ shots: a \emph{single}
+diffusion sample reaches $1.69\pm0.15\,$mm---still $8\times$ better than
+the MLP---while a single MDN draw lands at $84\,$mm. The classical grad-IK
+reference reaches $0.23\,$mm ($99.4\%$)---when the true model is available
+to optimize through at query time, classical optimization is fully
+competitive on accuracy.
 \textbf{E2 (multimodality):} against enumerated ground-truth solution sets,
 diffusion recovers $0.84\pm0.03$ of modes; both baselines recover none---the
 MLP because it is deterministic, and the MDN not through classic component
@@ -228,14 +240,28 @@ from $18.7$ to $14.8\,$mm---never surpassing the plain MLP---and mode recall
 remains exactly zero at every setting. grad-IK's random restarts, by
 contrast, \emph{do} recover modes (recall $0.73$)---multimodality does not
 require learning---though with a third of diffusion's solution diversity
-($9.5$ vs.\ $28.2$). \textbf{E3 (downstream value):} when success requires \emph{any} of
+($9.5$ vs.\ $28.2$). These conclusions are not artifacts of the enumeration
+hyperparameters: across a $3{\times}3$ sensitivity grid
+($\varepsilon\,{\in}\,\{10,12,14\}$, match radius ${\in}\,\{10,15,20\}$),
+absolute recall shifts with the radius---which \emph{defines} mode
+recovery---but the learned baselines stay at zero everywhere, and diffusion
+exceeds grad-IK at eight of nine settings (the exception is the strictest
+radius, where grad-IK's optimized solutions sit closest to mode centers). \textbf{E3 (downstream value):} when success requires \emph{any} of
 $K$ samples to be both accurate and collision-free among random obstacles,
 diffusion succeeds on $97.8\%$ of trials vs.\ $4.0\%$ (MLP)---redundancy is
 only exploitable if the model can represent it. \textbf{E4 (cost):}
 $38.6\,$ms per target for a batch of 32 samples on CPU, versus $395\,$ms
-for grad-IK---and, more fundamentally, grad-IK requires the differentiable
+for grad-IK. The gap is not an untuned-budget artifact: cutting grad-IK to
+100 iterations reduces its cost to ${\sim}130\,$ms but degrades it to
+$1.2$--$1.6\,$mm at $91$--$95\%$ success, below diffusion's operating
+point---matching diffusion's accuracy costs ${\sim}10\times$ its query
+time. More fundamentally, grad-IK requires the differentiable
 simulator in the loop at every query, whereas the learned methods answer
-from samples of the plant alone. That amortization property is exactly what
+from input--output samples alone, with no model access at query time. (One
+caveat applies to both: best-of-$K$ reporting assumes a verifier to pick
+the successful candidate---here $K$ forward evaluations, versus grad-IK's
+$K{\times}300$ forward--backward passes; in deployment that role falls to
+perception.) The amortization property is exactly what
 Sec.~\ref{sec:transfer} puts under stress. With three seeds,
 formal hypothesis testing adds little; the separations are instead
 unambiguous by inspection: on every metric in Table~\ref{tab:core} the
@@ -309,18 +335,22 @@ section quantifies what does---and does not---recover the loss;
 Table~\ref{tab:synthesis} summarizes.
 
 \begin{table}[t]
-\caption{Recovery mechanisms at a glance (Elastica-domain performance;
-best configuration of each mechanism).}
+\caption{Recovery mechanisms at a glance (Elastica-domain performance; best
+configuration of each mechanism). ``Queries'' are target-domain (Elastica)
+evaluations per target; the top-1 row spends none. The $139.9\,$mm
+transfer-collapse figure quoted elsewhere corresponds to best-of-8
+selection and is consistent with this study's $m{=}8$ point
+($139.7\,$mm).}
 \label{tab:synthesis}
 \centering
-\footnotesize
+\scriptsize
 \setlength{\tabcolsep}{2.2pt}
 \begin{tabular}{lccl}
 \toprule
 Mechanism & err (mm) & succ. & Cost / caveat \\
 \midrule
-none (PCC-trained) & $139.9\pm1.8$ & $0\%$ & --- \\
-best-of-32 selection & $130.4$ & $0\%$ & 32 target queries/target \\
+none (top-1 candidate) & $161.5$ & $0\%$ & no target queries \\
+best-of-32 selection & $130.4$ & $0\%$ & 32 queries/target \\
 \; + diversity order & $-6.7$ at $m{=}8$ & $0\%$ & same queries; $p{\approx}0.002$ \\
 guided sampling & $129.0$ & $0\%$ & 400 labels; suggestive \\
 gain randomization & $140.6$ & $0\%$ & degrades source; no gain \\
@@ -368,7 +398,8 @@ Beyond selecting among candidates, we steer generation itself: a small
 regressor trained on 400 Elastica-labeled candidates (25 targets) predicts
 transfer error from (candidate, target), and its gradient nudges the
 denoised estimate at every DDIM step, as in classifier
-guidance~\cite{dhariwal2021diffusion}. On 15 \emph{held-out} targets this
+guidance~\cite{dhariwal2021diffusion} (guidance scale $0.3$, fixed a priori
+without tuning). On 15 \emph{held-out} targets this
 improves best-of-16 error from $134.6$ to $129.0\,$mm (paired
 $5.6\pm2.5\,$mm, $t{=}2.27$, $p{\approx}0.04$; 11/15 targets). This is
 generalization to unseen targets, but it is the weakest effect in the
@@ -428,7 +459,9 @@ Elastica-simulated samples yields the only nonzero transfer success of any
 method---$67.1\pm1.0\,$mm and $10\%$ success ($2/20$ targets on each seed;
 recall the $5\%$ metric granularity)---at the cost of catastrophic
 forgetting~\cite{kirkpatrick2017overcoming} of the source domain ($0.67
-\rightarrow 133.4\,$mm). Mixing PCC data back into fine-tuning batches
+\rightarrow 133.4\,$mm). To be plain about magnitude: even this best
+transfer result remains ${\sim}13\times$ the success tolerance in mean
+error; no method in this paper solves the transferred task. Mixing PCC data back into fine-tuning batches
 restores retention smoothly and monotonically across all six ratios
 ($133.4 \rightarrow 30.7 \rightarrow 21.7 \rightarrow 16.7 \rightarrow 11.6
 \rightarrow 3.0\,$mm), but the transfer gain does not degrade in step: the
@@ -451,9 +484,12 @@ throughout.)
 \label{sec:limitations}
 (1) \textbf{Simulation-only.} Both domains are simulators; this is a
 controlled sim-to-sim study, and no claim is made about physical hardware.
-(2) \textbf{Simplified target-domain actuation.} The Cosserat-rod arm applies
-idealized per-segment couples and quasi-static settling; it is a harder test
-domain, not a validated model of a specific physical arm. (3)
+(2) \textbf{The target domain is a dynamic snapshot, not an equilibrium.}
+The Cosserat-rod arm applies idealized per-segment couples over a fixed
+$1.5\,$s damped-integration horizon at which the rod demonstrably has not
+settled (see Setup); the domain is a consistent, deterministic protocol and
+a harder test, but neither a static posture nor a validated model of a
+specific physical arm. (3)
 \textbf{Statistical coverage is uneven.} Core results, the shape-conditioning
 study, the baseline transfer collapse, and the fine-tuning grid carry
 three-seed statistics; the query-budget, ordering, and guidance experiments

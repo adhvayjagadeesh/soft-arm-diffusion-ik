@@ -1,9 +1,13 @@
 """EXPERIMENTAL: high-fidelity Cosserat-rod arm via PyElastica.
 
 This mirrors the PCCArm interface (forward(q) -> {"backbone", "tip"}) but runs a
-quasi-static PyElastica simulation per sample: the arm is one Cosserat rod split
-into `n_segments` regions, each receiving a constant internal couple derived
-from the 3 chamber pressures, then damped until it settles.
+PyElastica simulation per sample: the arm is one Cosserat rod split into
+`n_segments` regions, each receiving a constant internal couple derived from
+the 3 chamber pressures, integrated with linear damping from rest for a fixed
+`settle_time` horizon. NOTE (robustness check, see paper): the damped rod
+still oscillates at (and well beyond) the default 1.5 s horizon, so the
+returned state is a fixed, deterministic dynamic snapshot - the same protocol
+for every sample - not a static equilibrium.
 
 Notes:
   * ~1000x slower than PCCArm; use it to (a) generate a smaller high-fidelity

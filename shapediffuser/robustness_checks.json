@@ -1,0 +1,100 @@
+{
+  "gradik_compute": {
+    "iters100_restarts8": {
+      "tip_err_best_mm": 1.5918850567402387,
+      "success": 0.9140625,
+      "ms_per_target": 130.31311705708504
+    },
+    "iters100_restarts32": {
+      "tip_err_best_mm": 1.1892281553684825,
+      "success": 0.953125,
+      "ms_per_target": 131.4548198133707
+    },
+    "iters300_restarts8": {
+      "tip_err_best_mm": 0.17269301460079434,
+      "success": 0.9921875,
+      "ms_per_target": 383.0047566443682
+    },
+    "iters300_restarts32": {
+      "tip_err_best_mm": 0.14828214055399858,
+      "success": 0.9921875,
+      "ms_per_target": 390.12160897254944
+    }
+  },
+  "gradik_rng_variance": {
+    "tip_err_best_mm_mean": 0.15280381886268365,
+    "tip_err_best_mm_std": 0.003315787810935037,
+    "values": [
+      0.14828214055399858,
+      0.15398878991856185,
+      0.1561405261154905
+    ]
+  },
+  "e2_sensitivity": {
+    "eps10_radius10": {
+      "diffusion_recall": 0.3030303039334037,
+      "gradik_recall": 0.21980519728227096,
+      "mean_gt_modes": 2.35
+    },
+    "eps10_radius15": {
+      "diffusion_recall": 0.9150432890111749,
+      "gradik_recall": 0.6597402637655084,
+      "mean_gt_modes": 2.35
+    },
+    "eps10_radius20": {
+      "diffusion_recall": 1.0,
+      "gradik_recall": 0.9469696987758983,
+      "mean_gt_modes": 2.35
+    },
+    "eps12_radius10": {
+      "diffusion_recall": 0.32708333525806665,
+      "gradik_recall": 0.3458333369344473,
+      "mean_gt_modes": 2.05
+    },
+    "eps12_radius15": {
+      "diffusion_recall": 0.9062500037252903,
+      "gradik_recall": 0.725000006146729,
+      "mean_gt_modes": 2.05
+    },
+    "eps12_radius20": {
+      "diffusion_recall": 1.0,
+      "gradik_recall": 0.8812500052154064,
+      "mean_gt_modes": 2.05
+    },
+    "eps14_radius10": {
+      "diffusion_recall": 0.2605263175148713,
+      "gradik_recall": 0.5017543866446144,
+      "mean_gt_modes": 1.7
+    },
+    "eps14_radius15": {
+      "diffusion_recall": 0.8894736845242349,
+      "gradik_recall": 0.699122807697246,
+      "mean_gt_modes": 1.7
+    },
+    "eps14_radius20": {
+      "diffusion_recall": 0.9631578953642594,
+      "gradik_recall": 0.8482456152376375,
+      "mean_gt_modes": 1.7
+    }
+  },
+  "settle_convergence": {
+    "max_tip_shift_mm_1p5_vs_3p0": 85.2257308959961,
+    "mean_tip_shift_mm": 51.598655700683594,
+    "n_actuations": 8
+  },
+  "settle_convergence_extended": {
+    "1.5v3.0": {
+      "max_mm": 85.2257308959961,
+      "mean_mm": 51.598655700683594
+    },
+    "3.0v6.0": {
+      "max_mm": 144.61343383789062,
+      "mean_mm": 90.41471099853516
+    },
+    "6.0v9.0": {
+      "max_mm": 118.85260009765625,
+      "mean_mm": 74.98480224609375
+    },
+    "conclusion": "rod oscillates persistently; no equilibrium horizon up to 9s; the transfer domain is a fixed deterministic dynamic-snapshot protocol (identical across all experiments)"
+  }
+}
