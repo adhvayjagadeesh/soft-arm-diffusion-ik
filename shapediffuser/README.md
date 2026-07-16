@@ -392,6 +392,11 @@ scripts/
   generate_elastica_dataset.py   checkpointed/resumable Elastica-simulated dataset generation
   finetune_on_elastica.py        real-data fine-tuning scaling curve (partial win, Pareto tradeoff)
   finetune_on_elastica_regularized.py  50/50 PCC-mix fine-tune (solves forgetting, dilutes signal)
+  evaluate_gradik.py             classical optimization baseline, full E1/E2/E3 protocol
+  mdn_tuning_sweep.py            MDN component-count fairness sweep (4-32; changes nothing)
+  mdn_pathology_analysis.py      MDN per-component autopsy (healthy training, imprecise components)
+  make_paper_figures.py  make_supplementary_video.py   publication assets
+  robustness_checks.py           grad-IK compute/RNG, E2 sensitivity, settle-time convergence
 ```
 
 ## Quickstart
@@ -442,6 +447,19 @@ python scripts/query_budget_correlation.py --query_budget_results query_budget_r
   slow (~4s/sample, unbatched Cosserat integration), so transfer/query-budget
   studies deliberately use small target counts (20-45), not full-scale E1-E4
   numbers.
+* **The Elastica domain is a dynamic snapshot, not an equilibrium**
+  (found by `scripts/robustness_checks.py`, recorded in
+  `robustness_checks.json`): the damped rod still oscillates at the 1.5s
+  settling horizon and beyond (tip shifts of 50-145mm persist between
+  horizons up to 9s). Every Elastica experiment, dataset, and label used the
+  identical deterministic 1.5s protocol, so all results remain internally
+  valid as transfer to a fixed dynamic-snapshot domain - but earlier
+  "quasi-static equilibrium" descriptions were wrong and have been corrected
+  in the paper and code. The same robustness pass also verified grad-IK's
+  compute/accuracy tradeoff (matching diffusion's accuracy costs ~10x its
+  query time), grad-IK restart-RNG stability (std <0.01mm), and E2's
+  hyperparameter sensitivity (learned baselines are zero at every eps/radius
+  setting; diffusion exceeds grad-IK at 8 of 9).
 * Success bar (from prior discussion) is met for the *primary* PCC-only
   results: E1 well within ~1-2% of arm length; E2 recall 0.835 (target was
   >= 0.8-0.9); E3 a large gap. It is **not** met once Elastica model mismatch

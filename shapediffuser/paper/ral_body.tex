@@ -75,7 +75,7 @@ Our contributions:
 \begin{enumerate}
   \item \textbf{A validated advantage.} With three-seed statistics, diffusion
   IK dominates learned MLP and mixture-density-network (MDN) baselines,
-  recovers $0.84\pm0.03$ of ground-truth IK modes where they structurally
+  recovers $0.84\pm0.03$ of ground-truth IK modes where both
   recover none, and matches a classical random-restart optimization solver
   on accuracy at a tenth of its query cost without simulator access at query
   time---translating into a $97.8\%$ vs.\ $4.0\%$ obstacle-avoidance gap
@@ -152,7 +152,8 @@ in width, plus a classical optimization-based reference---gradient-descent
 IK through the differentiable PCC model from 32 random restarts (Adam, 300
 iterations), denoted grad-IK. Unless stated otherwise we sample $K{=}32$
 candidates per target and report best-of-$K$; success means tip error under
-$5\,$mm ($2\%$ of arm length). The obstacle task (E3) runs 200 trials, each placing three random
+$5\,$mm ($2\%$ of arm length). Accuracy (E1) is evaluated on 512 held-out
+targets and mode recall (E2) on 20. The obstacle task (E3) runs 200 trials, each placing three random
 spherical obstacles (radius $2\,$cm) in the workspace; success requires any
 of the $K$ samples to be simultaneously accurate and collision-free.
 
@@ -173,7 +174,8 @@ simulation of the same arm in PyElastica~\cite{gazzola2018forward,
 zhang2019modeling}: one rod, 48 elements, per-segment constant internal
 couples derived from the same chamber pressures, integrated with linear
 damping from rest for a fixed $1.5\,$s horizon (${\sim}4\,$s of compute per
-evaluation). A convergence check shows the damped rod still oscillates at
+evaluation). A convergence check (eight random actuations) shows the
+damped rod still oscillates at
 this horizon and beyond (tip shifts of $50$--$145\,$mm persist between
 horizons up to $9\,$s), so the transfer domain is a \emph{fixed,
 deterministic dynamic-snapshot protocol}---applied identically in every
@@ -264,10 +266,12 @@ $K{\times}300$ forward--backward passes; in deployment that role falls to
 perception.) The amortization property is exactly what
 Sec.~\ref{sec:transfer} puts under stress. With three seeds,
 formal hypothesis testing adds little; the separations are instead
-unambiguous by inspection: on every metric in Table~\ref{tab:core} the
-\emph{worst} diffusion seed outperforms the \emph{best} baseline seed---for
-tip error, $0.49$ vs.\ $13.33\,$mm, a gap exceeding $400\times$ the
-across-seed standard deviation.
+unambiguous by inspection: on every task metric (accuracy, recall,
+diversity, obstacle success) the \emph{worst} diffusion seed outperforms
+the \emph{best} learned-baseline seed---for tip error, $0.49$ vs.\
+$13.33\,$mm, a gap exceeding $400\times$ the across-seed standard
+deviation. (Query time is excluded---the MLP is trivially fastest---as is
+grad-IK, which has no training seeds and wins raw accuracy.)
 
 Three ablations support the protocol: guidance weight has an inverted-U
 optimum at $1.5$ (both accuracy and diversity collapse beyond ${\sim}3$);
@@ -376,7 +380,7 @@ $m{=}16$ ($t{=}3.34$ and $3.21$, $p{\approx}0.002$).}
 A multimodal model offers something a deterministic one cannot: $K$ diverse
 candidates to test against the target domain. Spending a budget of $m$
 Elastica evaluations and keeping the best candidate reduces mean error from
-$161.5$ ($m{=}1$) to $130.4\,$mm ($m{=}32$), improving 44 of 45 targets
+$161.5$ ($m{=}1$) to $130.4\,$mm ($m{=}32$), improving all 45 of 45 targets
 (Fig.~\ref{fig:budget})---real and broad-based, but to be blunt about its
 practical value: success stays at $0\%$, the gap to tolerance remains
 ${\sim}26\times$, and under this budget selection never actually solves a
@@ -395,7 +399,8 @@ than hide.
 
 \subsection{Guiding generation toward the target domain}
 Beyond selecting among candidates, we steer generation itself: a small
-regressor trained on 400 Elastica-labeled candidates (25 targets) predicts
+regressor (two hidden layers, width 128) trained on 400 Elastica-labeled
+candidates (25 targets) predicts
 transfer error from (candidate, target), and its gradient nudges the
 denoised estimate at every DDIM step, as in classifier
 guidance~\cite{dhariwal2021diffusion} (guidance scale $0.3$, fixed a priori
@@ -455,7 +460,9 @@ grid point ($5\%$ PCC data). There is no data-mixing sweet spot.}
 \end{figure}
 
 Fine-tuning the pretrained model \emph{exclusively} on $10^4$
-Elastica-simulated samples yields the only nonzero transfer success of any
+Elastica-simulated samples (20 epochs, learning rate $3{\times}10^{-5}$;
+mixing ratios below are enforced per batch by weighted sampling) yields the
+only nonzero transfer success of any
 method---$67.1\pm1.0\,$mm and $10\%$ success ($2/20$ targets on each seed;
 recall the $5\%$ metric granularity)---at the cost of catastrophic
 forgetting~\cite{kirkpatrick2017overcoming} of the source domain ($0.67
