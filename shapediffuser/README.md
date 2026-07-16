@@ -91,7 +91,7 @@ point of saturation.
 
 This is the project's cleanest mechanistic result: conditioning on the full
 24-D whole-body shape instead of the 3-D tip collapses diffusion's sampled
-diversity by **~85x** relative to tip-conditioning (28.16 -> 0.35), because
+diversity by **~80x** relative to tip-conditioning (28.16 -> 0.35), because
 specifying the whole shape removes almost all of the actuation redundancy that
 motivates diffusion in the first place. Correspondingly, mlp's disadvantage
 shrinks from **~30x worse** than diffusion (tip-conditioned: 13.36 vs
@@ -107,7 +107,10 @@ collapses entirely when the same actuations are executed on the
 higher-fidelity Cosserat-rod simulator (139.9 +/- 1.8mm, **0% success on
 every seed**); mlp collapses similarly (13.8mm -> 164.4 +/- 0.03mm).
 Calibration checks ruled out a simple unit/gain mismatch between the
-simulators - see the commit history for the `torque_gain` sweep. The learned
+simulators - the `torque_gain` sweep is committed as
+`gain_calibration_sweep` in `robustness_checks.json` (no gain over two
+orders of magnitude around the default aligns the tips; mean discrepancy
+never drops below ~150mm despite similarly sized workspaces). The learned
 inverse map is entirely simulator-specific and does not transfer, and this is
 seed-stable, not a training fluke.
 
@@ -301,7 +304,7 @@ Mean +/- std over 3 seeds:
 
 | PCC mix | PCC err (mm) | PCC success | Elastica err (mm) | Elastica success |
 |---|---|---|---|---|
-| 0% (pure Elastica) | 133.4 +/- 1.2 | 0% | **67.1 +/- 1.0** | **10.0 +/- 0.0%** |
+| 0% (pure Elastica) | 133.4 +/- 1.2 | 0% | **67.1 +/- 0.9** | **10.0 +/- 0.0%** |
 | 5% | 30.7 +/- 0.6 | 6.4% | 133.8 +/- 3.1 | 8.3 +/- 2.4% |
 | 10% | 21.7 +/- 0.5 | 17.0% | 143.2 +/- 4.9 | 8.3 +/- 2.4% |
 | 15% | 16.7 +/- 0.2 | 26.3% | 146.0 +/- 3.4 | 8.3 +/- 2.4% |
@@ -396,7 +399,7 @@ scripts/
   mdn_tuning_sweep.py            MDN component-count fairness sweep (4-32; changes nothing)
   mdn_pathology_analysis.py      MDN per-component autopsy (healthy training, imprecise components)
   make_paper_figures.py  make_supplementary_video.py   publication assets
-  robustness_checks.py           grad-IK compute/RNG, E2 sensitivity, settle-time convergence
+  robustness_checks.py           grad-IK compute/RNG, E2 sensitivity, settle-time convergence, gain sweep
 ```
 
 ## Quickstart
@@ -459,7 +462,8 @@ python scripts/query_budget_correlation.py --query_budget_results query_budget_r
   compute/accuracy tradeoff (matching diffusion's accuracy costs ~10x its
   query time), grad-IK restart-RNG stability (std <0.01mm), and E2's
   hyperparameter sensitivity (learned baselines are zero at every eps/radius
-  setting; diffusion exceeds grad-IK at 8 of 9).
+  setting; diffusion exceeds grad-IK at 7 of 9, with both exceptions at the
+  strictest match radius).
 * Success bar (from prior discussion) is met for the *primary* PCC-only
   results: E1 well within ~1-2% of arm length; E2 recall 0.835 (target was
   >= 0.8-0.9); E3 a large gap. It is **not** met once Elastica model mismatch

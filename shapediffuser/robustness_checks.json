@@ -96,5 +96,41 @@
       "mean_mm": 74.98480224609375
     },
     "conclusion": "rod oscillates persistently; no equilibrium horizon up to 9s; the transfer domain is a fixed deterministic dynamic-snapshot protocol (identical across all experiments)"
+  },
+  "gain_calibration_sweep": {
+    "note": "8 shared random actuations; per gain, mean/max tip discrepancy between ElasticaArm(torque_gain=g) and the PCC arm, plus each simulator's mean tip radius (workspace scale)",
+    "pcc_mean_tip_radius_m": 0.2029717117547989,
+    "gains": {
+      "0.0005": {
+        "mean_tip_discrepancy_mm": 149.49038696289062,
+        "max_tip_discrepancy_mm": 293.85577392578125,
+        "min_tip_discrepancy_mm": 26.10719108581543,
+        "elastica_mean_tip_radius_m": 0.23995092511177063
+      },
+      "0.0015": {
+        "mean_tip_discrepancy_mm": 149.7147674560547,
+        "max_tip_discrepancy_mm": 291.110107421875,
+        "min_tip_discrepancy_mm": 24.25523567199707,
+        "elastica_mean_tip_radius_m": 0.23955866694450378
+      },
+      "0.005": {
+        "mean_tip_discrepancy_mm": 151.1023406982422,
+        "max_tip_discrepancy_mm": 278.7745666503906,
+        "min_tip_discrepancy_mm": 19.201873779296875,
+        "elastica_mean_tip_radius_m": 0.23513643443584442
+      },
+      "0.015": {
+        "mean_tip_discrepancy_mm": 169.3355712890625,
+        "max_tip_discrepancy_mm": 266.8191223144531,
+        "min_tip_discrepancy_mm": 26.774137496948242,
+        "elastica_mean_tip_radius_m": 0.19944684207439423
+      },
+      "0.05": {
+        "mean_tip_discrepancy_mm": 258.44317626953125,
+        "max_tip_discrepancy_mm": 328.0210266113281,
+        "min_tip_discrepancy_mm": 167.30653381347656,
+        "elastica_mean_tip_radius_m": 0.09574926644563675
+      }
+    }
   }
 }

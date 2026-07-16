@@ -18,7 +18,7 @@ $97.8\%$ vs.\ $4.0\%$; three seeds), and delivers accuracy comparable to a
 strong optimization-based solver at a tenth of its query cost, without
 needing the simulator at query time. Two controlled manipulations show the
 advantage is specifically a redundancy effect: conditioning on the whole arm
-shape instead of the tip collapses sampled diversity by ${\sim}85\times$ and
+shape instead of the tip collapses sampled diversity by ${\sim}80\times$ and
 shrinks the baseline's disadvantage from ${\sim}30\times$ to ${\sim}3\times$,
 while increasing the number of segments widens the gap. However, when
 actuations from the PCC-trained model are executed on a high-fidelity
@@ -186,7 +186,9 @@ identical straight configuration (tip at $[0,0,0.24]\,$m) in both---so the
 discrepancy lies in the bending response, not in trivial misalignment. A
 sweep over the couple gain further confirmed it is directional/structural
 rather than a scale mismatch: no tested gain---spanning two orders of
-magnitude around the default---aligns the two workspaces.
+magnitude around the default---aligns the two workspaces (mean tip
+discrepancy never falls below ${\sim}150\,$mm on shared actuations, though
+the workspaces are similarly sized).
 
 \section{When Multimodality Helps}
 \label{sec:core}
@@ -247,8 +249,9 @@ hyperparameters: across a $3{\times}3$ sensitivity grid
 ($\varepsilon\,{\in}\,\{10,12,14\}$, match radius ${\in}\,\{10,15,20\}$),
 absolute recall shifts with the radius---which \emph{defines} mode
 recovery---but the learned baselines stay at zero everywhere, and diffusion
-exceeds grad-IK at eight of nine settings (the exception is the strictest
-radius, where grad-IK's optimized solutions sit closest to mode centers). \textbf{E3 (downstream value):} when success requires \emph{any} of
+exceeds grad-IK at seven of nine settings (both exceptions fall at the
+strictest match radius, where grad-IK's optimized solutions sit closest to
+mode centers). \textbf{E3 (downstream value):} when success requires \emph{any} of
 $K$ samples to be both accurate and collision-free among random obstacles,
 diffusion succeeds on $97.8\%$ of trials vs.\ $4.0\%$ (MLP)---redundancy is
 only exploitable if the model can represent it. \textbf{E4 (cost):}
@@ -296,7 +299,7 @@ ${\sim}0.5$--$1\times10^5$ samples.}
 \includegraphics[width=0.95\textwidth]{fig_redundancy.png}
 \caption{The diffusion advantage tracks actuation redundancy. (a) Replacing
 the 3-D tip target with a 24-D whole-shape target removes most of the
-redundancy: sampled diversity collapses ${\sim}85\times$ ($28.16\pm0.22$ to
+redundancy: sampled diversity collapses ${\sim}80\times$ ($28.16\pm0.22$ to
 $0.346\pm0.022$; mean $\pm$ std, 3 seeds). (b) Increasing the number of
 segments (single seed per morphology) widens the diffusion--MLP accuracy gap;
 at six segments the obstacle-task gap reaches $100\%$ vs.\ $1\%$.}
@@ -311,7 +314,7 @@ predictions hold (Fig.~\ref{fig:redundancy}).
 models on the full 24-D body shape (eight backbone points) instead of the
 3-D tip pins down almost the entire configuration. Diffusion's sampled
 diversity collapses from $28.16\pm0.22$ to $0.346\pm0.022$
-(${\sim}85\times$), and the MLP's accuracy disadvantage shrinks from
+(${\sim}80\times$), and the MLP's accuracy disadvantage shrinks from
 ${\sim}30\times$ ($13.4$ vs.\ $0.44\,$mm) to ${\sim}3\times$ ($0.49$ vs.\
 $0.16\,$mm), with both models at $100\%$ success (3 seeds). When there is
 one answer, a deterministic regressor is nearly as good; diffusion's edge
@@ -358,7 +361,7 @@ best-of-32 selection & $130.4$ & $0\%$ & 32 queries/target \\
 \; + diversity order & $-6.7$ at $m{=}8$ & $0\%$ & same queries; $p{\approx}0.002$ \\
 guided sampling & $129.0$ & $0\%$ & 400 labels; suggestive \\
 gain randomization & $140.6$ & $0\%$ & degrades source; no gain \\
-fine-tune, $0\%$ mix & $\mathbf{67.1\pm1.0}$ & $\mathbf{10\%}$ & forgets source ($133\,$mm) \\
+fine-tune, $0\%$ mix & $\mathbf{67.1\pm0.9}$ & $\mathbf{10\%}$ & forgets source ($133\,$mm) \\
 fine-tune, $\geq 5\%$ mix & $\geq 133.8$ & $\leq 10\%$ & retains source, forfeits gain \\
 \bottomrule
 \end{tabular}
@@ -438,7 +441,7 @@ mixing ratios (mean $\pm$ std, 3 seeds; held-out targets).}
 PCC mix & PCC err (mm) & succ. & Elastica err (mm) & succ. \\
 \midrule
 none (baseline) & $0.67\pm0.03$ & $100\%$ & $139.9\pm1.8$ & $0\%$ \\
-$0\%$  & $133.4\pm1.2$ & $0\%$ & $\mathbf{67.1\pm1.0}$ & $\mathbf{10\%}$ \\
+$0\%$  & $133.4\pm1.2$ & $0\%$ & $\mathbf{67.1\pm0.9}$ & $\mathbf{10\%}$ \\
 $5\%$  & $30.7\pm0.6$ & $6\%$ & $133.8\pm3.1$ & $8\%$ \\
 $10\%$ & $21.7\pm0.5$ & $17\%$ & $143.2\pm4.9$ & $8\%$ \\
 $15\%$ & $16.7\pm0.2$ & $26\%$ & $146.0\pm3.4$ & $8\%$ \\
@@ -463,7 +466,7 @@ Fine-tuning the pretrained model \emph{exclusively} on $10^4$
 Elastica-simulated samples (20 epochs, learning rate $3{\times}10^{-5}$;
 mixing ratios below are enforced per batch by weighted sampling) yields the
 only nonzero transfer success of any
-method---$67.1\pm1.0\,$mm and $10\%$ success ($2/20$ targets on each seed;
+method---$67.1\pm0.9\,$mm and $10\%$ success ($2/20$ targets on each seed;
 recall the $5\%$ metric granularity)---at the cost of catastrophic
 forgetting~\cite{kirkpatrick2017overcoming} of the source domain ($0.67
 \rightarrow 133.4\,$mm). To be plain about magnitude: even this best
