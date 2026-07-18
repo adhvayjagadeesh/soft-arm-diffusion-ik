@@ -39,6 +39,10 @@ def main():
             "ckpt_dir": "checkpoints", "results": "results.json"},
         6: {"config": "configs/morph_6seg.yaml", "data": "data_morph6seg",
             "ckpt_dir": "checkpoints_morph6seg", "results": "results_morph6seg.json"},
+        8: {"config": "configs/morph_8seg.yaml", "data": "data_morph8seg",
+            "ckpt_dir": "checkpoints_morph8seg", "results": "results_morph8seg.json"},
+        10: {"config": "configs/morph_10seg.yaml", "data": "data_morph10seg",
+             "ckpt_dir": "checkpoints_morph10seg", "results": "results_morph10seg.json"},
     }
 
     per_morph = {}

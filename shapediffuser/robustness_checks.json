@@ -132,5 +132,62 @@
         "elastica_mean_tip_radius_m": 0.09574926644563675
       }
     }
+  },
+  "damping_calibration_sweep": {
+    "note": "8 shared random actuations (same as check E); per damping value, tip discrepancy vs the PCC arm and tip shift vs the default damping=2.0 snapshot",
+    "dampings": {
+      "0.5": {
+        "mean_tip_discrepancy_mm": 213.02017211914062,
+        "max_tip_discrepancy_mm": 287.1104736328125,
+        "min_tip_discrepancy_mm": 80.39818572998047,
+        "elastica_mean_tip_radius_m": 0.20116931200027466,
+        "tip_shift_vs_default_mm": 192.37191772460938
+      },
+      "1": {
+        "mean_tip_discrepancy_mm": 166.59730529785156,
+        "max_tip_discrepancy_mm": 266.1824035644531,
+        "min_tip_discrepancy_mm": 11.822301864624023,
+        "elastica_mean_tip_radius_m": 0.22404733300209045,
+        "tip_shift_vs_default_mm": 75.8424301147461
+      },
+      "2": {
+        "mean_tip_discrepancy_mm": 151.1023406982422,
+        "max_tip_discrepancy_mm": 278.7745666503906,
+        "min_tip_discrepancy_mm": 19.201873779296875,
+        "elastica_mean_tip_radius_m": 0.23513643443584442,
+        "tip_shift_vs_default_mm": 0.0
+      },
+      "5": {
+        "mean_tip_discrepancy_mm": 149.3581085205078,
+        "max_tip_discrepancy_mm": 292.9273376464844,
+        "min_tip_discrepancy_mm": 25.583759307861328,
+        "elastica_mean_tip_radius_m": 0.23978954553604126,
+        "tip_shift_vs_default_mm": 41.903907775878906
+      },
+      "10": {
+        "mean_tip_discrepancy_mm": 149.4031219482422,
+        "max_tip_discrepancy_mm": 294.9633483886719,
+        "min_tip_discrepancy_mm": 26.953847885131836,
+        "elastica_mean_tip_radius_m": 0.23999902606010437,
+        "tip_shift_vs_default_mm": 48.298439025878906
+      }
+    }
+  },
+  "transfer_damping_sensitivity": {
+    "note": "same seed-0 diffusion candidates (10 targets from the transfer study's seed, K=8) executed under Elastica at several damping constants; best-of-K tip error per damping",
+    "dampings": {
+      "0.5": {
+        "elastica_tip_err_best_of_K_mm": 109.81303658336401,
+        "success_rate_best_of_K": 0.0
+      },
+      "2": {
+        "elastica_tip_err_best_of_K_mm": 119.93629410862923,
+        "success_rate_best_of_K": 0.0
+      },
+      "8": {
+        "elastica_tip_err_best_of_K_mm": 145.07130682468414,
+        "success_rate_best_of_K": 0.0
+      }
+    }
   }
 }

@@ -17,6 +17,15 @@
      in a commit message): does any Elastica couple gain spanning two orders
      of magnitude around the default align the two simulators' tips for
      shared actuations, or is the mismatch structural/directional?
+  F. damping calibration sweep (sixth pass) - same design as E but over the
+     Elastica damping constant (default 2.0), which directly shapes where the
+     never-settled rod sits at the 1.5s snapshot: does any damping align the
+     two simulators' tips, or is the mismatch robust to this construction
+     choice too?
+  G. transfer-collapse damping sensitivity - the paper's headline collapse
+     (~140-151mm, 0% success) was measured at damping 2.0 only. Re-evaluates
+     the same diffusion candidates (seed-0 model, 10 targets, K=8) under
+     Elastica at several dampings: does the collapse magnitude depend on it?
 
     python scripts/robustness_checks.py --out robustness_checks.json
     python scripts/robustness_checks.py --checks E   # merge one check into an existing out-file
@@ -48,7 +57,7 @@ def main():
     ap.add_argument("--config", default="configs/default.yaml")
     ap.add_argument("--n_targets_compute", type=int, default=128)
     ap.add_argument("--out", default="robustness_checks.json")
-    ap.add_argument("--checks", default="ABCDE",
+    ap.add_argument("--checks", default="ABCDEFG",
                     help="which checks to run; existing out-file keys are kept")
     args = ap.parse_args()
 
@@ -189,6 +198,74 @@ def main():
             "elastica_mean_tip_radius_m": float(et.norm(dim=-1).mean()),
         }
         print(gain, results["gain_calibration_sweep"]["gains"][f"{gain:g}"], flush=True)
+
+    # ---------- F. damping calibration sweep ---------- #
+    if "F" in args.checks:
+      print("=== F: damping calibration sweep ===", flush=True)
+      rng = np.random.default_rng(7)
+      q = torch.as_tensor(rng.uniform(0, 1, size=(8, arm.q_dim)), dtype=torch.float32)
+      pcc_tips = arm.forward(q)["tip"]
+      results["damping_calibration_sweep"] = {
+          "note": "8 shared random actuations (same as check E); per damping value, "
+                  "tip discrepancy vs the PCC arm and tip shift vs the default "
+                  "damping=2.0 snapshot",
+          "dampings": {},
+      }
+      tips_by_damping = {}
+      for damping in (0.5, 1.0, 2.0, 5.0, 10.0):
+        ela = ElasticaArm(n_segments=cfg["arm"]["n_segments"],
+                          seg_length=cfg["arm"]["seg_length"],
+                          base_radius=cfg["arm"]["rod_radius"],
+                          damping_constant=damping)
+        et = ela.forward(q)["tip"]
+        tips_by_damping[damping] = et
+        d = (et - pcc_tips).norm(dim=-1) * 1000
+        results["damping_calibration_sweep"]["dampings"][f"{damping:g}"] = {
+            "mean_tip_discrepancy_mm": float(d.mean()),
+            "max_tip_discrepancy_mm": float(d.max()),
+            "min_tip_discrepancy_mm": float(d.min()),
+            "elastica_mean_tip_radius_m": float(et.norm(dim=-1).mean()),
+        }
+        print(damping, results["damping_calibration_sweep"]["dampings"][f"{damping:g}"],
+              flush=True)
+      ref = tips_by_damping[2.0]
+      for damping, et in tips_by_damping.items():
+        shift = (et - ref).norm(dim=-1) * 1000
+        results["damping_calibration_sweep"]["dampings"][f"{damping:g}"][
+            "tip_shift_vs_default_mm"] = float(shift.mean())
+
+    # ---------- G. transfer-collapse damping sensitivity ---------- #
+    if "G" in args.checks:
+      print("=== G: transfer-collapse damping sensitivity ===", flush=True)
+      device = "cpu"
+      model, norm, _ = load_model("checkpoints_seed0/diffusion.pt", device)
+      sampler = make_sampler(model, norm, device, ev["ddim_steps"], ev["guidance"])
+      targets = sample_reachable_targets(arm, 10, seed=4242)
+      K = 8
+      cand = [sampler(t.unsqueeze(0), K)[0] for t in targets]
+      results["transfer_damping_sensitivity"] = {
+          "note": "same seed-0 diffusion candidates (10 targets from the transfer "
+                  "study's seed, K=8) executed under Elastica at several damping "
+                  "constants; best-of-K tip error per damping",
+          "dampings": {},
+      }
+      for damping in (0.5, 2.0, 8.0):
+        ela = ElasticaArm(n_segments=cfg["arm"]["n_segments"],
+                          seg_length=cfg["arm"]["seg_length"],
+                          base_radius=cfg["arm"]["rod_radius"],
+                          damping_constant=damping)
+        best = []
+        for t, qs in zip(targets, cand):
+            et = ela.forward(qs)["tip"]
+            best.append(float((et - t).norm(dim=-1).min()) * 1000)
+        best = np.array(best)
+        results["transfer_damping_sensitivity"]["dampings"][f"{damping:g}"] = {
+            "elastica_tip_err_best_of_K_mm": float(best.mean()),
+            "success_rate_best_of_K": float((best < tol * 1000).mean()),
+        }
+        print(damping,
+              results["transfer_damping_sensitivity"]["dampings"][f"{damping:g}"],
+              flush=True)
 
     with open(args.out, "w") as f:
         json.dump(results, f, indent=2)

@@ -43,6 +43,7 @@ class ElasticaArm:
         torque_gain: float = 5.0e-3,
         settle_time: float = 1.5,
         dt: float = 2.0e-5,
+        damping_constant: float = 2.0,
     ):
         if not _HAS_ELASTICA:
             raise ImportError("pip install pyelastica to use ElasticaArm")
@@ -56,6 +57,7 @@ class ElasticaArm:
         self.torque_gain = torque_gain
         self.settle_time = settle_time
         self.dt = dt
+        self.damping_constant = damping_constant
         self.q_dim = 3 * n_segments
 
     # ------------------------------------------------------------------ #
@@ -82,7 +84,8 @@ class ElasticaArm:
             ea.OneEndFixedBC, constrained_position_idx=(0,), constrained_director_idx=(0,)
         )
         sim.dampen(rod).using(
-            ea.AnalyticalLinearDamper, damping_constant=2.0, time_step=self.dt
+            ea.AnalyticalLinearDamper, damping_constant=self.damping_constant,
+            time_step=self.dt
         )
 
         # Chamber pressures -> per-segment internal couple (local x/y bending).

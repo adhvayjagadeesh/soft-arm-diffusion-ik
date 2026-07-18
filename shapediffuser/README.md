@@ -119,7 +119,12 @@ Calibration checks ruled out a simple unit/gain mismatch between the
 simulators - the `torque_gain` sweep is committed as
 `gain_calibration_sweep` in `robustness_checks.json` (no gain over two
 orders of magnitude around the default aligns the tips; mean discrepancy
-never drops below ~150mm despite similarly sized workspaces). The learned
+never drops below ~150mm despite similarly sized workspaces). The damping
+constant is ruled out too (`damping_calibration_sweep` +
+`transfer_damping_sensitivity`, sixth-pass additions): dampings 0.5-10 move
+the never-settled snapshot by up to ~190mm yet never bring tip discrepancy
+below ~149mm, and the collapse itself persists at every tested damping
+(110-145mm best-of-8, 0% success at 0.5/2/8). The learned
 inverse map is entirely simulator-specific and does not transfer, and this is
 seed-stable, not a training fluke.
 
@@ -411,7 +416,7 @@ scripts/
   mdn_tuning_sweep.py            MDN component-count fairness sweep (4-32; changes nothing)
   mdn_pathology_analysis.py      MDN per-component autopsy (healthy training, imprecise components)
   make_paper_figures.py  make_supplementary_video.py   publication assets
-  robustness_checks.py           grad-IK compute/RNG, E2 sensitivity, settle-time convergence, gain sweep
+  robustness_checks.py           grad-IK compute/RNG, E2 sensitivity, settle convergence, gain+damping sweeps
 ```
 
 ## Quickstart
