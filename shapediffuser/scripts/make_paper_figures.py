@@ -119,7 +119,7 @@ def fig_redundancy():
     ax1.set_ylabel("sampled diversity (curvature space)")
     ax1.set_title("(a) redundancy collapses under shape conditioning")
 
-    segs = [2, 4, 6]
+    segs = sorted(int(s) for s in morph.keys())
     for model, color, marker, label in (("diffusion", BLUE, "o", "diffusion"),
                                         ("mlp", AQUA, "s", "MLP")):
         ax2.plot(segs, [morph[str(s)][model]["tip_err_best_of_K_mm"] for s in segs],

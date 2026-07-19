@@ -177,15 +177,24 @@ diversity-aware query strategy measurably outperforms the obvious baseline
 strategy, especially once you have a moderate (not minimal, not maximal)
 number of queries to spend.
 
-**Morphology generalization (`scripts/morphology_sweep.py`, 2/4/6-segment PCC
-arms, `morphology_sweep_results.json`, E1/E3/E4 only - E2's dbscan
-calibration is 4-segment-specific, out of scope here):**
+**Morphology generalization (`scripts/morphology_sweep.py`, 2/4/6/8/10-segment
+PCC arms, `morphology_sweep_results.json`, E1/E3/E4 only - E2's dbscan
+calibration is 4-segment-specific, out of scope here; 8/10-segment points
+added post-fifth-pass, tolerance always ~2% of arm length):**
 
 | n_segments | diffusion err (mm) / success | mlp err (mm) / success | obstacle: diffusion / mlp |
 |---|---|---|---|
 | 2 | 0.113 / 100% | 1.719 / 75.0% | 0.745 / 0.460 |
 | 4 | 0.277 / 100% | 13.461 / 5.3% | 0.975 / 0.045 |
-| 6 | 0.917 / 99.8% | 33.872 / 1.2% | **1.000 / 0.010** |
+| 6 | 0.917 / 99.8% | 33.872 / 1.2% | 1.000 / 0.010 |
+| 8 | 1.570 / 100% | 62.518 / 0.0% | **1.000 / 0.000** |
+| 10 | 3.233 / 100% | 103.193 / 0.0% | **0.995 / 0.000** |
+
+Both curves are monotone over five morphology points. The MLP's error
+roughly doubles with each added segment pair and its success is literally
+zero from 8 segments on, while diffusion stays within the scaled tolerance
+at 100% success throughout - the mode-averaging failure grows without
+bound while the multimodal model degrades only gently.
 
 The core thesis is not an artifact of the one 4-segment arm used everywhere
 else: as segment count (and actuation redundancy) grows, mlp's error explodes
@@ -386,7 +395,7 @@ configs/
   default.yaml                   tip-conditioned, main config (4-segment arm)
   shape.yaml                     shape-conditioned variant (cond_type: shape)
   smoke.yaml                     fast end-to-end smoke-test config
-  morph_2seg.yaml  morph_6seg.yaml   morphology-generalization sweep (2/6-segment arms)
+  morph_2seg.yaml  morph_6seg.yaml  morph_8seg.yaml  morph_10seg.yaml   morphology sweep arms
   dr.yaml                        domain randomization (curvature_gain), tested and rejected
 src/shapediffuser/
   pcc_arm.py                     differentiable PCC arm (fast GT engine + grad-IK baseline)

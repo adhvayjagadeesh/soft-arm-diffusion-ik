@@ -40,5 +40,33 @@
       "obstacle_task_success_rate": 0.01,
       "ms_per_target": 0.006157904863357544
     }
+  },
+  "8": {
+    "diffusion": {
+      "tip_err_best_of_K_mm": 1.5700481599196792,
+      "success_rate_best_of_K": 1.0,
+      "obstacle_task_success_rate": 1.0,
+      "ms_per_target": 33.43398869037628
+    },
+    "mlp": {
+      "tip_err_best_of_K_mm": 62.51844763755798,
+      "success_rate_best_of_K": 0.0,
+      "obstacle_task_success_rate": 0.0,
+      "ms_per_target": 0.030092895030975342
+    }
+  },
+  "10": {
+    "diffusion": {
+      "tip_err_best_of_K_mm": 3.23313707485795,
+      "success_rate_best_of_K": 1.0,
+      "obstacle_task_success_rate": 0.995,
+      "ms_per_target": 100.18941760063171
+    },
+    "mlp": {
+      "tip_err_best_of_K_mm": 103.19263488054276,
+      "success_rate_best_of_K": 0.0,
+      "obstacle_task_success_rate": 0.0,
+      "ms_per_target": 0.04209578037261963
+    }
   }
 }

@@ -120,10 +120,11 @@ because specifying the whole shape pins down the actuation. The diffusion
 model's sampled diversity collapses from $28.16\pm0.22$ to $0.346\pm0.022$,
 a factor of about 80, and the MLP goes from about 30 times worse than
 diffusion to only about 3 times worse, with both models at 100 percent
-success. Panel (b) shows the morphology manipulation. Training fresh models
-on two-segment and six-segment versions of the arm adds or removes actuation
-freedom, and the accuracy gap widens monotonically with segment count, with
-the obstacle-task gap reaching 100 percent versus 1 percent at six segments.
+success. Panel (b) shows the morphology manipulation. Training fresh models on two,
+four, six, eight, and ten segment versions of the arm adds or removes
+actuation freedom, and the accuracy gap widens monotonically across all
+five points, with the MLP at literal zero success from eight segments on
+while diffusion holds at least 99.5 percent on the obstacle task.
 The mechanism is that the denoiser represents whatever conditional
 distribution the data presents. When conditioning removes the multimodality,
 diffusion's samples concentrate onto the single answer and a deterministic
@@ -329,11 +330,12 @@ that scopes the paper's claims.}
 $0.346\pm0.022$, about 80 times. Accuracy gap shrinks from about 30 times
 (13.4 versus 0.44 mm tip error) to about 3 times (0.49 versus 0.16 mm mean
 per-backbone-point error), both models at 100 percent success.
-\item Morphology, single seed per arm. MLP error 1.7 mm at 75 percent
-success with two segments, 13.5 mm at 5 percent with four, 33.9 mm at 1.2
-percent with six. Diffusion 0.11, 0.28, 0.92 mm with at least 99.8 percent
-success throughout. Obstacle task at six segments, 100 percent versus 1
-percent.
+\item Morphology, single seed per arm, five points. MLP error 1.7 mm at 75
+percent success with two segments, then 13.5, 33.9, 62.5, and 103.2 mm with
+success falling to literal zero from eight segments on. Diffusion 0.11,
+0.28, 0.92, 1.57, and 3.23 mm with at least 99.8 percent success
+throughout, always within the scaled 2 percent tolerance. Obstacle task
+from eight segments on, at least 99.5 percent versus 0 percent.
 \end{itemize}
 
 \desc{These are the quantitative backbone of Fig. 2, showing both directions

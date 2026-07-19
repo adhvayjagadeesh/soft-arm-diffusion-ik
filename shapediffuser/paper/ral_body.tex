@@ -308,8 +308,9 @@ ${\sim}0.5$--$1\times10^5$ samples.}
 the 3-D tip target with a 24-D whole-shape target removes most of the
 redundancy: sampled diversity collapses ${\sim}80\times$ ($28.16\pm0.22$ to
 $0.346\pm0.022$; mean $\pm$ std, 3 seeds). (b) Increasing the number of
-segments (single seed per morphology) widens the diffusion--MLP accuracy gap;
-at six segments the obstacle-task gap reaches $100\%$ vs.\ $1\%$.}
+segments (single seed per morphology) widens the diffusion--MLP accuracy gap
+monotonically from two to ten segments; from eight segments on, the MLP's
+obstacle-task success is $0\%$ while diffusion's stays ${\geq}99.5\%$.}
 \label{fig:redundancy}
 \end{figure*}
 
@@ -328,14 +329,16 @@ accuracy metric), with both models at $100\%$ success (3 seeds). When there is
 one answer, a deterministic regressor is nearly as good; diffusion's edge
 is specifically the multimodal case.
 
-\textbf{Adding redundancy: morphology.} Training fresh models on two- and
-six-segment variants of the same arm family (tolerance scaled to $2\%$ of
-arm length), the MLP's error grows from $1.7\,$mm (2 seg, $75\%$ success) to
-$33.9\,$mm (6 seg, $1.2\%$ success) while diffusion degrades gracefully
-($0.11$ to $0.92\,$mm, ${\geq}99.8\%$ success); the obstacle-task gap at six
-segments is $100\%$ vs.\ $1\%$---the largest in the study. More redundancy
-means worse mode averaging and more collision-free alternatives that only a
-multimodal model can offer.
+\textbf{Adding redundancy: morphology.} Training fresh models on two-,
+six-, eight-, and ten-segment variants of the same arm family (tolerance
+scaled to $2\%$ of arm length), the MLP's error grows monotonically from
+$1.7\,$mm (2 seg, $75\%$ success) through $33.9$ and $62.5\,$mm to
+$103.2\,$mm at ten segments, with $0\%$ success from eight segments on,
+while diffusion degrades gracefully ($0.11$ to $3.2\,$mm, ${\geq}99.8\%$
+success throughout); from eight segments the obstacle-task separation is
+total (${\geq}99.5\%$ vs.\ $0\%$). More redundancy means worse mode
+averaging and more collision-free alternatives that only a multimodal model
+can offer.
 
 \section{Does It Survive Model Mismatch?}
 \label{sec:transfer}
