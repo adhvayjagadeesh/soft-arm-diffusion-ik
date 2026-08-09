@@ -1,0 +1,543 @@
+% ============================================================================
+%  PAPER 2 - follow-up to the sim-to-sim RA-L study. INTRODUCTION + METHODS.
+%
+%  FORMAT: IEEE-RAS conference format (ieeeconf.cls), as used by RoboSoft.
+%  Verified against the RAS PaperCept author kit and the RoboSoft CFP:
+%    - US Letter, two column, 10pt
+%    - 6 pages INCLUDING references; up to 2 extra pages purchasable
+%  RoboSoft 2027 is in Brisbane; theme "Soft Robotics in the Wild".
+%  VERIFY the 2027 author kit at robosoft27.com before submitting - page
+%  limits and anonymity policy are set per-edition.
+%
+%  OVERLEAF: this file needs ieeeconf.cls in the same project. Get it from
+%  the RAS support page (ieeeconf.zip) or copy the vendored one from your
+%  existing paper directory. Overleaf does NOT ship ieeeconf by default.
+%
+%  Placeholders print in red via \todo{}. Search "TODO" before sending.
+%  Sections V (Results) and VI (Discussion) are deliberate stubs.
+% ============================================================================
+\documentclass[letterpaper, 10pt, conference]{ieeeconf}
+\IEEEoverridecommandlockouts
+
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage[dvipsnames]{xcolor}
+\usepackage[colorlinks=true,allcolors=blue]{hyperref}
+
+% ieeeconf descends from IEEEtran v1.6, which predates \IEEEPARstart
+\providecommand{\IEEEPARstart}[2]{\PARstart{#1}{#2}}
+
+% Visible placeholder marker - delete the body of this macro before submission
+\newcommand{\todo}[1]{\textcolor{red}{\textbf{[TODO: #1]}}}
+\newcommand{\ie}{i.e.}
+\newcommand{\eg}{e.g.}
+
+\begin{document}
+
+\title{\LARGE \bf Does Sim-to-Sim Predict Sim-to-Real? Multimodal Diffusion
+Inverse Kinematics on a Physical Tendon-Driven Continuum Arm}
+
+% IEEE-RAS conferences are normally single-blind (named authors), unlike
+% RA-L which is double-anonymous. CONFIRM in the RoboSoft 2027 CFP.
+\author{Adhvay Jagadeesh$^{1}$
+\thanks{$^{1}$Independent Researcher. \todo{contact email}}}
+
+\maketitle
+\thispagestyle{empty}
+\pagestyle{empty}
+
+\begin{abstract}
+Conditional diffusion models can represent the full, multimodal solution set
+of a redundant inverse kinematics (IK) problem, and a prior controlled study
+established three things in simulation: the advantage over deterministic
+regressors is specifically a redundancy effect, the learned inverse map does
+not survive a change of dynamics model, and the recovery mechanisms available
+after that collapse are sharply bounded. That study was simulation-only. We
+port its full protocol to a physical two-section, six-tendon continuum arm
+with camera-based shape measurement, and ask two questions. First, does the
+transfer collapse reproduce against real hardware, where the source model is
+a calibrated model of the very arm being commanded? Second, and more useful
+to the field, does the cheap sim-to-sim characterization \emph{rank} methods
+the same way expensive hardware evaluation does---\ie, can sim-to-sim serve
+as a screening proxy? We describe the platform, the measurement chain, and a
+protocol in which every reported gap is bounded below by an independently
+measured noise floor.
+\todo{one sentence of headline results once measured}
+\end{abstract}
+
+\begin{keywords}
+Modeling, Control, and Learning for Soft Robots; Deep Learning Methods;
+inverse kinematics; sim-to-real transfer.
+\end{keywords}
+
+% ============================================================================
+\section{Introduction}
+% ============================================================================
+
+\IEEEPARstart{A}{} tendon-driven continuum arm with three tendons per section
+has more actuation degrees of freedom than task degrees of freedom: a
+two-section arm exposes six actuator commands to specify a three-dimensional
+tip position. The inverse map is therefore one-to-many, and its preimages are
+not merely a connected null space---physically distinct arm shapes reach the
+same point. A deterministic learned regressor trained on motor-babbling
+data~\cite{giorelli2015neural} fits the conditional \emph{mean} of that
+multimodal distribution and can return an actuation realizing none of the
+true solutions, while a conditional diffusion
+model~\cite{ho2020denoising,song2021denoising} learns the full conditional
+distribution and can sample every solution mode.
+
+A prior controlled simulation study~\cite{prior} established three results
+about this setting. (i) The diffusion advantage is \emph{specifically}
+redundancy resolution rather than generic model capacity: removing redundancy
+by conditioning on whole-body shape collapses sampled diversity by roughly
+$80\times$ and nearly erases the gap to a deterministic baseline, while
+adding redundancy by increasing segment count widens it monotonically. (ii)
+The learned inverse map is simulator-specific: actuations from a model
+trained on a piecewise-constant-curvature (PCC) simulator collapse when
+executed on a Cosserat-rod simulator of the same arm, on every training seed.
+(iii) The recovery available after that collapse is bounded---candidate
+selection under a target-domain query budget helps but never solves a target,
+a diversity-aware query ordering significantly outperforms confidence
+ordering, guidance-based adaptation is at best suggestive, gain domain
+randomization achieves nothing, and target-domain fine-tuning buys genuine
+transfer only across a sharp retention--transfer cliff that data mixing
+cannot smooth.
+
+Every one of those results was obtained between two simulators. That is a
+deliberate methodological choice---it isolates model mismatch from
+sensing noise, actuator imperfection, and unmodeled contact---but it leaves
+the practically decisive question untouched. This paper addresses it
+directly.
+
+\subsection*{Why hardware changes the question}
+
+Moving to a physical arm does more than add realism; it inverts the
+relationship between the source model and the target domain. In the prior
+study, the source simulator (PCC) was never intended as a model of the target
+simulator (Cosserat rod); the two were independently specified, and their
+disagreement was structural and directional. Here, by contrast, the source
+model is a PCC model whose parameters are \emph{fitted to the very arm the
+policy will command}. If the transfer collapse survives even that
+best-case pairing, the finding is considerably stronger than its sim-to-sim
+predecessor. If it does not, the magnitude of the sim-to-sim gap was an
+artifact of pairing two unrelated models, and that is worth reporting with
+equal prominence.
+
+Hardware also makes one of the prior study's framings natural rather than
+contrived. The query-budget experiment asked how many \emph{expensive}
+target-domain evaluations candidate selection requires; in simulation an
+``expensive'' evaluation was four seconds of Cosserat integration. On
+hardware it is a physical actuation, a settling interval, and a camera
+measurement---genuinely costly, non-batchable, and subject to wear. The
+economics the experiment was designed to probe are real here.
+
+\subsection*{Contributions}
+
+\begin{enumerate}
+  \item \textbf{An inexpensive, reproducible hardware platform and protocol.}
+  A two-section, six-tendon continuum arm built from commodity parts
+  (\todo{final bill-of-materials cost}), with camera-based shape measurement,
+  and a full port of the prior study's evaluation suite. All fabrication
+  templates, calibration procedures, and code are released.
+
+  \item \textbf{A sim-to-real characterization of multimodal diffusion IK.}
+  We measure whether the transfer collapse, the redundancy-specific
+  advantage, and the bounded-recovery result each reproduce against physical
+  hardware (Sec.~\ref{sec:results}).
+
+  \item \textbf{A cross-domain consistency test.} We compare the
+  \emph{ranking} of methods and recovery mechanisms under the prior
+  sim-to-sim evaluation against their ranking on hardware. Agreement would
+  license sim-to-sim screening as a cheap proxy for hardware evaluation;
+  disagreement would caution against a practice the field currently relies on
+  implicitly.
+\end{enumerate}
+
+Because a physical platform introduces error sources that simulation does
+not, we treat measurement rigour as a first-class part of the method rather
+than an appendix. Sec.~\ref{sec:noise} specifies an independently measured
+noise floor, and no reported gap is interpreted unless it exceeds that floor.
+
+% ============================================================================
+\section{Related Work}
+% ============================================================================
+
+\textbf{Continuum-arm IK.} Non-learned approaches invert a model at query
+time---Jacobian schemes for nonconstant-curvature
+arms~\cite{giorelli2015neural} and real-time FEM
+inversion~\cite{duriez2013control}. The constant-curvature kinematics
+underlying our source model are reviewed in~\cite{webster2010design}, and
+tendon-driven construction with spacer discs follows standard practice in the
+continuum-robotics literature. Learned approaches fit a deterministic
+target-to-actuation map on babbling data~\cite{giorelli2015neural}; mixture
+density networks~\cite{bishop1994mixture} are the classical multimodal
+alternative.
+
+\textbf{Diffusion models for robot action.} Denoising diffusion
+models~\cite{ho2020denoising} with DDIM sampling~\cite{song2021denoising} and
+classifier-free guidance~\cite{ho2022classifier} underpin diffusion
+policies~\cite{chi2023diffusion}. IKDiffuser~\cite{zhang2025ikdiffuser} solves
+IK for rigid multi-arm systems with flexible kinematic-tree topology;
+compliant continuum bodies are outside its scope.
+
+\textbf{Crossing the reality gap.} Domain
+randomization~\cite{tobin2017domain} and target-domain fine-tuning are the
+standard levers, with catastrophic forgetting under naive fine-tuning
+well-documented~\cite{kirkpatrick2017overcoming}. What is comparatively rare,
+and what this paper supplies, is a single method evaluated under \emph{both}
+a controlled sim-to-sim gap and a physical sim-to-real gap with a shared
+protocol, permitting the two to be compared rather than merely reported
+side by side.
+
+% ============================================================================
+\section{Hardware Platform}
+\label{sec:hardware}
+% ============================================================================
+
+\subsection{Mechanical design}
+
+The arm is a two-section tendon-driven continuum manipulator built around a
+single flexible backbone. The backbone is a $4.76\,$mm ($3/16''$) structural
+fiberglass rod of free length $305\,$mm ($12''$). Six spacer discs of
+$38.1\,$mm ($1.5''$) diameter and $3.2\,$mm ($1/8''$) thickness are bonded to
+the backbone at a uniform $50.8\,$mm ($2''$) pitch with two-part epoxy,
+dividing the arm into two actuated sections of three discs each.
+
+Each disc carries seven holes: a central clearance hole for the backbone and
+six tendon guides arranged on two concentric circles at radii $8.1\,$mm and
+$14.0\,$mm, with three holes per circle at $0^\circ$, $120^\circ$ and
+$240^\circ$. Section~A's three tendons run on the inner circle and terminate
+at disc~3; section~B's run on the outer circle, pass freely through discs 1--5,
+and terminate at disc~6. Both sections therefore actuate along
+\emph{identical} angular headings and differ only in moment arm---a
+deliberate choice that preserves the three-fold symmetry assumed by the
+constant-curvature source model, so that the two sections are related by a
+single scalar per section rather than by a change of basis.
+
+Tendons are $0.79\,$mm ($1/32''$) $7\times7$ stainless wire rope, terminated
+with swaged sleeves and pre-tensioned through inline turnbuckles at the base.
+Steel rope is used rather than braided polymer line specifically to suppress
+creep: commanded tendon length must remain a stable function of actuator
+angle across thousands of cycles.
+
+All six discs are drilled through a single thickened master jig rather than
+individually marked. This converts per-disc random error, which no
+calibration can absorb, into a single systematic bias, which one gain fit per
+section absorbs exactly. \todo{report measured disc-to-disc hole scatter}
+
+\subsection{Actuation}
+
+Six ROBOTIS DYNAMIXEL XL330-M288-T smart servos, one per tendon, are mounted
+on a rigid $305\times305\,$mm acrylic base plate in three pairs at $120^\circ$
+about the backbone, aligning each servo pair with the tendon heading it
+drives. Each servo carries a metal horn with a brass standoff acting as a
+cable capstan; tendon displacement is related to commanded servo angle by
+$\Delta \ell = \theta\,(r_{s} + r_{c})$ with $r_{s}$ the capstan radius and
+$r_{c}$ the cable radius, measured empirically rather than assumed
+(Sec.~\ref{sec:calib}). Cable is wound in a single layer so that the
+effective radius, and hence this relation, remains constant over the working
+range. Servos operate in extended-position (multi-turn) mode with software
+limits set below the tendon's mechanical travel.
+
+The base plate is drilled with the same seven-hole pattern as a spacer disc
+and functions as disc~V$_0$: tendons emerge from the plate on the same radii
+and headings they occupy at every disc above, so that no tendon runs obliquely
+between the base and the first disc.
+
+\subsection{Command integrity}
+
+One implementation detail is reported because it is invisible until it
+corrupts data. The six servos share a single half-duplex bus and are
+commanded with a synchronised broadcast write, so that both sections actuate
+simultaneously rather than in sequence. That broadcast returns no
+acknowledgement by design; the host library therefore reports success as soon
+as the bytes are queued, whether or not any servo acted on them. If the next
+packet is placed on the bus too soon, the servos discard the write
+\emph{silently}---no error code, no fault flag, and every register still
+reading back the expected configuration.
+
+We characterised the threshold directly by varying the interval between the
+broadcast write and the following read, and counting how many servos executed
+the command: none at $0$ or $5\,$ms, and all six at $10\,$ms and above. All
+experiments enforce a $25\,$ms interval, roughly $2.5\times$ the measured
+threshold. Without it the failure does not announce itself---it appears in the
+data as an actuation that was commanded but never applied, which is
+indistinguishable from a genuine tracking failure and would inflate any
+reported sim-to-real gap. We note it because anyone reproducing this platform
+on a shared servo bus will meet it.
+
+\subsection{Actuation parameterization}
+
+To keep the interface identical to the prior study, the policy commands a
+normalized actuation vector $\mathbf{q}\in[0,1]^{6}$, mapped affinely onto
+each servo's calibrated travel range. Per-section curvature components follow
+the same three-chamber form used for the pneumatic arm
+in~\cite{prior}, with tendon displacements substituted for chamber pressures:
+\begin{align}
+k_x &= g\,(\ell_0 - \tfrac{1}{2}\ell_1 - \tfrac{1}{2}\ell_2), \\
+k_y &= g\,\tfrac{\sqrt{3}}{2}\,(\ell_1 - \ell_2),
+\end{align}
+with $g$ a per-section gain fitted in Sec.~\ref{sec:calib}. This substitution
+is what allows the entire software stack, the trained policies, and the
+evaluation suite to transfer unmodified.
+
+% ============================================================================
+\section{Measurement System}
+\label{sec:sensing}
+% ============================================================================
+
+\subsection{Vision chain}
+
+Arm shape is measured by a fixed monocular global-shutter camera
+(OV9281, $1280\times800$, monochrome) observing planar fiducial markers
+mounted flat on the spacer discs. A global shutter is used rather than a
+rolling shutter so that measurements taken during residual motion are not
+geometrically distorted---relevant because, as in the prior study's target
+domain, the arm is sampled at a fixed settling horizon rather than at true
+static equilibrium.
+
+Markers are ArUco fiducials~\cite{garrido2014automatic} of side
+\todo{final marker size} mm, the largest that fits a $38.1\,$mm disc with an
+adequate quiet zone. Markers on discs 3 and 6 give section-boundary and tip
+pose; a full set on all six discs gives whole-backbone shape for the
+shape-conditioning experiment. Detection and pose estimation use
+OpenCV~\cite{bradski2000opencv}.
+
+Camera intrinsics and distortion are estimated once from
+\todo{$N$} checkerboard views and held fixed. The camera-to-base extrinsic
+transform is established from a marker at a surveyed position on the base
+plate, and the camera is not moved thereafter; every reported position is
+expressed in the base frame.
+
+\subsection{Sampling protocol}
+
+One sample comprises: draw an actuation, command all six servos, wait a fixed
+settling interval of \todo{settle time} s, capture one frame, detect markers,
+and record the actuation together with the resulting disc poses. Detections
+failing a confidence or visibility check are discarded and redrawn; we report
+the discard rate as a data-quality statistic, a diagnostic with no analogue in
+simulation.
+
+The settling interval is fixed rather than adaptive, making the target domain
+a deterministic dynamic-snapshot protocol---the same convention adopted, and
+explicitly flagged, in the prior study's Cosserat domain. It is applied
+identically to every sample, every dataset, and every evaluation here.
+
+\subsection{Noise floor and repeatability}
+\label{sec:noise}
+
+Because the central claim concerns the size of a measured gap, we bound
+below what a gap can mean. Two quantities are measured before any policy is
+evaluated.
+
+\emph{Sensing noise.} Two markers are fixed at a separation measured
+independently with digital calipers, and the vision chain estimates that
+separation \todo{$N$} times under the operating configuration. The spread of
+those estimates is the sensing noise floor.
+\todo{report mean error and standard deviation}
+
+\emph{Actuation repeatability.} A set of \todo{$N$} actuations is commanded
+\todo{$k$} times each, in randomized order with a full return to the home
+configuration between repeats. The dispersion of measured tip position for a
+repeated command is the actuation repeatability floor, and it folds in servo
+backlash, cable hysteresis, and any residual creep.
+\todo{report repeatability}
+
+A reported transfer gap is interpreted only where it exceeds the combination
+of these two floors. This is the substitute, on hardware, for the exact
+determinism a simulator provides for free.
+
+% ============================================================================
+\section{Source Model, Training, and Protocol}
+\label{sec:protocol}
+% ============================================================================
+
+\subsection{Fitted source model}
+\label{sec:calib}
+
+The source domain is a differentiable PCC model of \emph{this} arm, with
+parameters fitted to it rather than assumed. Calibration proceeds in two
+stages. First, each capstan's effective radius is measured directly by
+commanding a known servo rotation and measuring paid-out cable with calipers,
+yielding the angle-to-tendon-length relation. Second, the per-section
+curvature gain $g$ is fitted by least squares over \todo{$N$} calibration
+actuations, minimizing measured-versus-predicted disc pose.
+\todo{report fitted gains and calibration residual}
+
+This is the pairing that makes the hardware experiment sharp. The source
+model is not an arbitrary alternative dynamics---it is the best
+constant-curvature description of the physical arm that the data supports,
+and its residual is reported so readers can judge how good a source model the
+policy was given.
+
+\subsection{Fit quality as a reported quantity}
+
+Because the source model is fitted rather than assumed, its residual is a
+result, not a footnote: it upper-bounds how much of any observed transfer gap
+is attributable to an imperfect source model rather than to a genuine
+limitation of the learned inverse map. We report the distribution of
+measured-versus-predicted disc position error, and compare it against the
+sensing noise floor of Sec.~\ref{sec:noise}. A residual close to that floor
+means the constant-curvature description fits this arm about as well as the
+instrumentation can resolve, and the transfer gap may be read at face value; a
+residual far above it bounds how much of the gap is our own modelling error.
+\todo{report fitted gains and residual distribution}
+
+\subsection{Training data and models}
+
+Training data are \todo{$N$} actuations drawn i.i.d.\ uniformly and pushed
+through the fitted PCC model. We evaluate the same four methods as the prior
+study, with architectures and hyperparameters carried over unchanged so that
+any difference in outcome is attributable to the domain rather than to
+retuning: a conditional diffusion model (residual FiLM-conditioned MLP
+denoiser, DDPM training with cosine schedule and classifier-free guidance,
+DDIM sampling), a deterministic MLP regressor, a mixture density
+network~\cite{bishop1994mixture}, and a random-restart gradient-IK solver
+optimizing through the differentiable fitted model. Unless stated otherwise
+$K$ candidates are sampled per target and best-of-$K$ is reported; success is
+tip error below \todo{tolerance} mm, set to the same fraction of arm length
+used previously.
+
+\subsection{Experiments}
+
+\begin{itemize}
+  \item \textbf{H1 (source-domain accuracy).} Tip error against the fitted
+  PCC model, verifying the policies are trained correctly before hardware is
+  involved. This isolates training failures from transfer failures.
+
+  \item \textbf{H2 (multimodality on hardware).} Ground-truth solution sets
+  are enumerated on the fitted source model, and mode recall is scored using
+  \emph{measured} configurations. Distances are computed in curvature space
+  rather than actuation space, since the tendon-to-curvature map carries a
+  per-section null space that would otherwise contaminate distance-based
+  metrics.
+
+  \item \textbf{H3 (downstream value).} Obstacle avoidance with physical
+  obstacles at surveyed positions; success requires some candidate to be both
+  accurate and collision-free.
+
+  \item \textbf{H4 (sim-to-real transfer).} The headline experiment:
+  actuations from the source-trained policies executed on the arm, measured
+  by camera, and compared against source-domain performance.
+
+  \item \textbf{H5 (recovery mechanisms).} Candidate selection under a
+  physical query budget, diversity-aware versus confidence query ordering,
+  and fine-tuning on measured data across a range of source-data mixing
+  ratios---testing in particular whether the retention--transfer cliff
+  persists when the target-domain data are real measurements rather than
+  simulator output.
+\end{itemize}
+
+\subsection{Cross-domain comparison}
+
+The consistency test of Contribution~3 compares method and mechanism
+\emph{rankings} between the prior sim-to-sim study and H1--H5 here. We
+deliberately do not fit a relationship between the two gap magnitudes: with a
+single hardware platform, that would be an $n{=}1$ regression. Rank agreement
+is what a practitioner would actually rely on when using a cheap sim-to-sim
+study to decide which method to carry forward to hardware, and rank agreement
+is what we report.
+
+% ============================================================================
+\section{Results}
+\label{sec:results}
+% ============================================================================
+
+\todo{Entire section. Populate from H1--H5. Suggested structure: Table I
+comparing all four methods in source domain and on hardware; Fig.~2 query
+budget curve with physical queries; Table II fine-tuning mixing grid;
+Fig.~3 rank comparison against the sim-to-sim study.}
+
+% ============================================================================
+\section{Discussion and Limitations}
+% ============================================================================
+
+\todo{Entire section. Limitations to state explicitly once results exist:
+single hardware platform ($n{=}1$ for the cross-domain claim); planar or
+near-planar sensing if a single camera is used; open-loop IK formulation with
+best-of-$K$ presupposing a verifier; fitted PCC as source model is a
+best-case pairing and a harsher source model would likely widen the gap.}
+
+% ============================================================================
+\section*{Reproducibility}
+% ============================================================================
+
+Code, fabrication templates, calibration procedures, and per-experiment
+result files are available at \todo{repository URL}. Note that this must be
+replaced with an anonymized mirror if the venue uses double-anonymous review.
+
+% ============================================================================
+\begin{thebibliography}{99}
+
+\bibitem{prior}
+\todo{Self-citation to the sim-to-sim paper. Replace with the published
+reference, or cite as an anonymous preprint if under double-anonymous
+review.}
+
+\bibitem{ho2020denoising}
+J.~Ho, A.~Jain, and P.~Abbeel, ``Denoising diffusion probabilistic models,''
+in \emph{Advances in Neural Information Processing Systems}, 2020.
+
+\bibitem{song2021denoising}
+J.~Song, C.~Meng, and S.~Ermon, ``Denoising diffusion implicit models,'' in
+\emph{International Conference on Learning Representations}, 2021.
+
+\bibitem{ho2022classifier}
+J.~Ho and T.~Salimans, ``Classifier-free diffusion guidance,'' \emph{arXiv
+preprint arXiv:2207.12598}, 2022.
+
+\bibitem{chi2023diffusion}
+C.~Chi, S.~Feng, Y.~Du, Z.~Xu, E.~Cousineau, B.~Burchfiel, and S.~Song,
+``Diffusion policy: Visuomotor policy learning via action diffusion,'' in
+\emph{Robotics: Science and Systems}, 2023.
+
+\bibitem{zhang2025ikdiffuser}
+Z.~Zhang \emph{et al.}, ``IKDiffuser: A diffusion-based generative inverse
+kinematics solver for kinematic trees,'' \emph{arXiv preprint
+arXiv:2506.13087}, 2025.
+
+\bibitem{giorelli2015neural}
+M.~Giorelli, F.~Renda, M.~Calisti, A.~Arienti, G.~Ferri, and C.~Laschi,
+``Neural network and Jacobian method for solving the inverse statics of a
+cable-driven soft arm with nonconstant curvature,'' \emph{IEEE Transactions
+on Robotics}, vol.~31, no.~4, pp. 823--834, 2015.
+
+\bibitem{webster2010design}
+R.~J.~Webster III and B.~A.~Jones, ``Design and kinematic modeling of constant
+curvature continuum robots: A review,'' \emph{The International Journal of
+Robotics Research}, vol.~29, no.~13, pp. 1661--1683, 2010.
+
+\bibitem{duriez2013control}
+C.~Duriez, ``Control of elastic soft robots based on real-time finite element
+method,'' in \emph{IEEE International Conference on Robotics and Automation},
+2013.
+
+\bibitem{bishop1994mixture}
+C.~M.~Bishop, ``Mixture density networks,'' Aston University, Tech. Rep.
+NCRG/94/004, 1994.
+
+\bibitem{tobin2017domain}
+J.~Tobin, R.~Fong, A.~Ray, J.~Schneider, W.~Zaremba, and P.~Abbeel, ``Domain
+randomization for transferring deep neural networks from simulation to the
+real world,'' in \emph{IEEE/RSJ International Conference on Intelligent
+Robots and Systems}, 2017.
+
+\bibitem{kirkpatrick2017overcoming}
+J.~Kirkpatrick \emph{et al.}, ``Overcoming catastrophic forgetting in neural
+networks,'' \emph{Proceedings of the National Academy of Sciences}, vol.~114,
+no.~13, pp. 3521--3526, 2017.
+
+\bibitem{garrido2014automatic}
+S.~Garrido-Jurado, R.~Mu\~{n}oz-Salinas, F.~J.~Madrid-Cuevas, and
+M.~J.~Mar\'{i}n-Jim\'{e}nez, ``Automatic generation and detection of highly
+reliable fiducial markers under occlusion,'' \emph{Pattern Recognition},
+vol.~47, no.~6, pp. 2280--2292, 2014.
+
+\bibitem{bradski2000opencv}
+G.~Bradski, ``The OpenCV library,'' \emph{Dr. Dobb's Journal of Software
+Tools}, 2000.
+
+\end{thebibliography}
+
+\end{document}
