@@ -1,19 +1,20 @@
 % ============================================================================
-%  PAPER 2 - follow-up to the sim-to-sim RA-L study. INTRODUCTION + METHODS.
+%  PAPER 2 - hardware follow-up to the sim-to-sim study. INTRO + METHODS ONLY.
 %
-%  FORMAT: IEEE-RAS conference format (ieeeconf.cls), as used by RoboSoft.
-%  Verified against the RAS PaperCept author kit and the RoboSoft CFP:
+%  FORMAT: IEEE RA-L. Per RA-L Information for Authors, INITIAL submissions use
+%  the IEEE CONFERENCE format (ieeeconf.cls, from the RAS PaperCept support
+%  files); the journal IEEEtran format is only for the accepted final version.
 %    - US Letter, two column, 10pt
-%    - 6 pages INCLUDING references; up to 2 extra pages purchasable
-%  RoboSoft 2027 is in Brisbane; theme "Soft Robotics in the Wild".
-%  VERIFY the 2027 author kit at robosoft27.com before submitting - page
-%  limits and anonymity policy are set per-edition.
+%    - 6 pages free, up to 2 extra at a per-page charge, references included
+%    - DOUBLE-ANONYMOUS review: no author names, no identifying URLs, no
+%      "our previous work" phrasing. Violations are desk-rejected.
+%    - First two keywords must come from the official RA-L keyword list.
 %
-%  OVERLEAF: this file needs ieeeconf.cls in the same project. Get it from
-%  the RAS support page (ieeeconf.zip) or copy the vendored one from your
-%  existing paper directory. Overleaf does NOT ship ieeeconf by default.
+%  OVERLEAF: needs ieeeconf.cls in the same project. Overleaf does NOT ship it;
+%  copy the one committed alongside this file.
 %
-%  Placeholders print in red via \todo{}. Search "TODO" before sending.
+%  \anonymoustrue for submission; \anonymousfalse for your own reading copy.
+%  Placeholders print in red via \todo{}. Search "TODO" before submitting.
 %  Sections V (Results) and VI (Discussion) are deliberate stubs.
 % ============================================================================
 \documentclass[letterpaper, 10pt, conference]{ieeeconf}
@@ -28,6 +29,9 @@
 % ieeeconf descends from IEEEtran v1.6, which predates \IEEEPARstart
 \providecommand{\IEEEPARstart}[2]{\PARstart{#1}{#2}}
 
+\newif\ifanonymous
+\anonymoustrue          % RA-L initial submission is double-anonymous
+
 % Visible placeholder marker - delete the body of this macro before submission
 \newcommand{\todo}[1]{\textcolor{red}{\textbf{[TODO: #1]}}}
 \newcommand{\ie}{i.e.}
@@ -38,10 +42,12 @@
 \title{\LARGE \bf Does Sim-to-Sim Predict Sim-to-Real? Multimodal Diffusion
 Inverse Kinematics on a Physical Tendon-Driven Continuum Arm}
 
-% IEEE-RAS conferences are normally single-blind (named authors), unlike
-% RA-L which is double-anonymous. CONFIRM in the RoboSoft 2027 CFP.
+\ifanonymous
+\author{Anonymous submission}
+\else
 \author{Adhvay Jagadeesh$^{1}$
 \thanks{$^{1}$Independent Researcher. \todo{contact email}}}
+\fi
 
 \maketitle
 \thispagestyle{empty}
@@ -87,7 +93,7 @@ true solutions, while a conditional diffusion
 model~\cite{ho2020denoising,song2021denoising} learns the full conditional
 distribution and can sample every solution mode.
 
-A prior controlled simulation study~\cite{prior} established three results
+A recent controlled simulation study~\cite{prior} established three results
 about this setting. (i) The diffusion advantage is \emph{specifically}
 redundancy resolution rather than generic model capacity: removing redundancy
 by conditioning on whole-body shape collapses sampled diversity by roughly
@@ -124,7 +130,7 @@ predecessor. If it does not, the magnitude of the sim-to-sim gap was an
 artifact of pairing two unrelated models, and that is worth reporting with
 equal prominence.
 
-Hardware also makes one of the prior study's framings natural rather than
+Hardware also makes one of that study's framings natural rather than
 contrived. The query-budget experiment asked how many \emph{expensive}
 target-domain evaluations candidate selection requires; in simulation an
 ``expensive'' evaluation was four seconds of Cosserat integration. On
@@ -138,7 +144,7 @@ economics the experiment was designed to probe are real here.
   \item \textbf{An inexpensive, reproducible hardware platform and protocol.}
   A two-section, six-tendon continuum arm built from commodity parts
   (\todo{final bill-of-materials cost}), with camera-based shape measurement,
-  and a full port of the prior study's evaluation suite. All fabrication
+  and a full port of that study's evaluation suite. All fabrication
   templates, calibration procedures, and code are released.
 
   \item \textbf{A sim-to-real characterization of multimodal diffusion IK.}
@@ -321,7 +327,7 @@ simulation.
 
 The settling interval is fixed rather than adaptive, making the target domain
 a deterministic dynamic-snapshot protocol---the same convention adopted, and
-explicitly flagged, in the prior study's Cosserat domain. It is applied
+explicitly flagged, in that study's Cosserat domain. It is applied
 identically to every sample, every dataset, and every evaluation here.
 
 \subsection{Noise floor and repeatability}
@@ -463,17 +469,22 @@ best-case pairing and a harsher source model would likely widen the gap.}
 \section*{Reproducibility}
 % ============================================================================
 
-Code, fabrication templates, calibration procedures, and per-experiment
-result files are available at \todo{repository URL}. Note that this must be
-replaced with an anonymized mirror if the venue uses double-anonymous review.
+\ifanonymous
+Code, fabrication templates, calibration procedures, and per-experiment result
+files are available in an anonymized repository:
+\todo{anonymous.4open.science mirror URL - mint it from a fresh branch}.
+\else
+Code, fabrication templates, calibration procedures, and per-experiment result
+files are available at \todo{public repository URL}.
+\fi
 
 % ============================================================================
 \begin{thebibliography}{99}
 
 \bibitem{prior}
-\todo{Self-citation to the sim-to-sim paper. Replace with the published
-reference, or cite as an anonymous preprint if under double-anonymous
-review.}
+\todo{The sim-to-sim paper. Under double-anonymous review cite it in the
+third person as an existing preprint - never as "our previous work", and do
+not include a repository URL that identifies the authors.}
 
 \bibitem{ho2020denoising}
 J.~Ho, A.~Jain, and P.~Abbeel, ``Denoising diffusion probabilistic models,''
