@@ -33,9 +33,29 @@ sys.path.insert(0, __file__.rsplit("/", 2)[0] + "/src")
 
 from shapediffuser import PCCArm                                   # noqa: E402
 
-N_SECTIONS = 2
-SEG_LEN_M = 0.1524            # 6 in per section, matching the build
-DISCS_PER_SECTION = 3
+CONFIG = __file__.rsplit("/", 2)[0] + "/configs/physical_arm.yaml"
+
+
+def _cfg():
+    """Read geometry from the config the models are actually trained on.
+
+    Hardcoding these was a real bug: the config's curvature_gain changed from
+    25.0 to 10.0 and a stale constant here silently generated targets for a
+    differently sized arm, producing 145 mm source-domain error from a policy
+    that solves its own model to 0.3 mm. Anything that sets the workspace
+    scale reads from one place.
+    """
+    import yaml
+    with open(CONFIG) as f:
+        c = yaml.safe_load(f)
+    return c["arm"], c["eval"]
+
+
+_ARM_CFG, _EVAL_CFG = _cfg()
+N_SECTIONS = _ARM_CFG["n_segments"]
+SEG_LEN_M = _ARM_CFG["seg_length"]
+SOURCE_GAIN = _ARM_CFG["curvature_gain"]
+DISCS_PER_SECTION = _ARM_CFG["points_per_seg"]
 
 
 class MockArm:
@@ -43,9 +63,15 @@ class MockArm:
     hardware that has not been measured yet - the point is exercising shapes
     and code paths, not predicting numbers."""
 
-    def __init__(self, source_gain: float = 25.0, true_gain: float = 21.5,
+    def __init__(self, source_gain: float | None = None,
+                 true_gain: float | None = None,
                  sensing_noise_mm: float = 1.5, backlash_mm: float = 2.0,
                  dropout: float = 0.02, seed: int = 0):
+        # source gain must track the config the policy was trained on; the
+        # "true" gain is deliberately offset from it, which IS the mock's
+        # model mismatch
+        source_gain = SOURCE_GAIN if source_gain is None else source_gain
+        true_gain = source_gain * 0.86 if true_gain is None else true_gain
         self.q_dim = 3 * N_SECTIONS
         self.n_discs = DISCS_PER_SECTION * N_SECTIONS
         self.source_gain = source_gain

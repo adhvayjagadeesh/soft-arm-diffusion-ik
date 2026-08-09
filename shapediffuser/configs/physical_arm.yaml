@@ -1,0 +1,64 @@
+# The PHYSICAL tendon-driven arm (paper 2), not a simulated morphology.
+#
+# Geometry measured from the build: two actuated sections, three tendons each,
+# six spacer discs at 2 in pitch on a 3/16 in fiberglass backbone.
+#   section length 6 in = 0.1524 m,  total reach 12 in = 0.305 m
+#   success tolerance 2% of arm length, the same convention used throughout
+#   the simulation study (5 mm on a 240 mm arm)
+#
+# curvature_gain is a PLACEHOLDER, chosen for PLAUSIBILITY, not carried over.
+# It is scale-dependent: what bends the arm is the product gain * seg_length,
+# so paper 1's 25.0 does NOT transfer to sections 2.5x longer. At 25.0 with
+# 0.1524 m sections each section would curl 218 deg and 31% of the workspace
+# would put the tip below the base plate - an arm no fiberglass rod pulled by
+# XL330s will produce. 10.0 gives a 90 deg maximum bend and keeps the whole
+# workspace above the base.
+#
+# Re-run this entire config with the value from `calibrate_arm.py --fit`
+# before any result is reported. A policy trained on the wrong gain solves a
+# differently sized arm - the failure rehearse_pipeline.py guards against.
+arm:
+  n_segments: 2
+  seg_length: 0.1524
+  curvature_gain: 10.0      # PLACEHOLDER (90 deg max bend) - replace with fitted value
+  points_per_seg: 3         # 3 discs per section, matching the marker layout
+  rod_radius: 0.0024        # 3/16 in rod -> 2.4 mm radius
+
+data:
+  n_train: 500000
+  n_val: 20000
+  mode: uniform
+  babble_step: 0.08
+  shape_points: 6           # six disc markers
+  cond_type: tip
+  seed: 0
+
+model:
+  hidden: 512
+  n_blocks: 6
+  T: 1000
+  cond_drop: 0.1
+  mdn_k: 8
+
+train:
+  batch_size: 1024
+  lr: 3.0e-4
+  epochs: 60
+  weight_decay: 1.0e-6
+  device: cuda              # falls back to cpu automatically
+  ckpt_dir: checkpoints_physical
+
+eval:
+  n_targets_accuracy: 512
+  n_samples_per_target: 32
+  ddim_steps: 20
+  guidance: 1.5
+  success_tol: 0.0061       # 2% of 0.305 m
+  n_targets_modes: 20
+  mode_pool: 2000000
+  dbscan_eps: 12.0
+  dbscan_min_samples: 5
+  mode_match_radius: 15.0
+  n_obstacle_trials: 200
+  n_obstacles: 3
+  obstacle_radius: 0.02
