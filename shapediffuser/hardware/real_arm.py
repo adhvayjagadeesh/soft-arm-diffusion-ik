@@ -45,6 +45,19 @@ REF_MARKER_ID = 9          # bonded flat to the base plate; defines the base fra
 DISC_MARKER_IDS = [0, 1, 2, 3, 4, 5]        # V1..V6, bottom to tip
 TIP_MARKER_ID = 5
 
+# Marker sets. Every experiment that only needs a tip position can run on the
+# minimal set; only shape-conditioning needs the whole backbone. Fewer markers
+# means fewer tabs to build and fewer things to physically occlude - but note
+# it does NOT improve geometric visibility, because discs 3 and 6 are the
+# section ends and carry the most extreme tilt, so they are the binding
+# constraint either way (measured: identical all-visible rates for {2,5} and
+# for all six).
+MARKER_SETS = {
+    "full":    [0, 1, 2, 3, 4, 5],   # whole backbone shape
+    "minimal": [2, 5],               # section boundary + tip
+    "tip":     [5],                  # tip only
+}
+
 SETTLE_S = 1.5             # fixed, deterministic - see the note in forward()
 N_REPEATS = 3              # frames averaged per measurement
 MAX_RETRIES = 6            # detection failures before giving up on a sample
@@ -68,7 +81,14 @@ class RealArm:
     """
 
     def __init__(self, travel_rev: float | None = None, settle: float = SETTLE_S,
-                 n_repeats: int = N_REPEATS, marker_m: float | None = None):
+                 n_repeats: int = N_REPEATS, marker_m: float | None = None,
+                 markers: str | list = "full"):
+        self.disc_ids = (MARKER_SETS[markers] if isinstance(markers, str)
+                         else list(markers))
+        if TIP_MARKER_ID not in self.disc_ids:
+            raise RealArmError(
+                f"marker set {self.disc_ids} omits the tip marker "
+                f"{TIP_MARKER_ID}; every experiment needs the tip position.")
         self.bus = ServoBus().connect()
         K, dist = load_calib()
         self.tracker = MarkerTracker(K, dist, **({"marker_m": marker_m}
@@ -115,7 +135,7 @@ class RealArm:
         acc, used = {}, 0
         for _ in range(MAX_RETRIES * self.n_repeats):
             m = self._measure_once()
-            if m is None or not all(i in m for i in DISC_MARKER_IDS):
+            if m is None or not all(i in m for i in self.disc_ids):
                 continue
             for k, v in m.items():
                 acc.setdefault(k, []).append(v)
@@ -124,8 +144,10 @@ class RealArm:
                 break
         if used == 0:
             raise RealArmError(
-                "no usable frame: need the reference marker and all disc markers "
-                "visible at once. Check framing, lighting and occlusion.")
+                f"no usable frame: need the reference marker plus discs "
+                f"{self.disc_ids} visible at once. Check framing, lighting and "
+                "occlusion, or fall back to a smaller marker set "
+                "(markers='minimal').")
         return {k: np.mean(np.stack(v), axis=0) for k, v in acc.items()}
 
     # ---------------- actuation ---------------- #
@@ -151,7 +173,7 @@ class RealArm:
         for row in arr:
             self.bus.move_and_settle(self._q_to_positions(row), settle=self.settle)
             m = self.measure()
-            pts = np.stack([m[i] for i in DISC_MARKER_IDS])
+            pts = np.stack([m[i] for i in self.disc_ids])
             backbones.append(np.vstack([np.zeros(3), pts]))   # base + discs
             tips.append(m[TIP_MARKER_ID])
         bb = torch.as_tensor(np.stack(backbones), dtype=torch.float32)
@@ -215,7 +237,7 @@ def selftest(arm: RealArm):
     print("homing...")
     arm.home()
     m = arm.measure()
-    print(f"markers seen in base frame: {sorted(m.keys())}")
+    print(f"marker set: {arm.disc_ids}   seen in base frame: {sorted(m.keys())}")
     for mid in sorted(m):
         print(f"  id {mid}: {np.round(m[mid]*1000, 1)} mm")
 
@@ -237,10 +259,12 @@ def main():
     ap.add_argument("--n-poses", type=int, default=5)
     ap.add_argument("--k", type=int, default=4)
     ap.add_argument("--travel-rev", type=float, default=None)
+    ap.add_argument("--markers", default="full", choices=sorted(MARKER_SETS),
+                    help="which disc markers must be visible (default: full)")
     args = ap.parse_args()
 
     try:
-        with RealArm(travel_rev=args.travel_rev) as arm:
+        with RealArm(travel_rev=args.travel_rev, markers=args.markers) as arm:
             if args.repeatability:
                 repeatability(arm, args.n_poses, args.k)
             else:
