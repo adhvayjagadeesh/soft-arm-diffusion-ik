@@ -13,10 +13,21 @@ Printing beats drilling wood for three specific reasons, none cosmetic:
   * Hole positions come from the same numbers every time - no jig, no wear, no
     per-disc scatter.
 
-Disc diameter is raised to 50 mm from the 38.1 mm craft discs. Outer tendons
-then sit at an 18 mm moment arm instead of 14 mm, ~29% more bending moment for
-the same cable tension, which matters with 0.52 N.m servos. Checked for
-self-collision: at maximum curvature adjacent discs stay ~38 mm apart.
+Disc diameter is 56 mm, chosen from a force budget rather than convenience.
+
+An XL330 at half stall pulls ~95 N through an M3-standoff capstan. Bending a
+rod to curvature k needs moment EI*k, supplied by tension x tendon radius, so
+    r_tendon >= EI * k / T
+With r_outer = 22 mm this covers 90 deg per section on a 1/8 in fiberglass
+backbone even at the pessimistic E = 40 GPa. Going wider buys little: cable
+travel grows with r (more spool wraps, and stacked wraps break the linear
+angle-to-length relation), while mass and disc-to-disc collision grow too.
+
+THE BACKBONE MATTERS FAR MORE THAN THE DISC. Stiffness goes as diameter^4, so
+a 3/16 in rod is ~5x stiffer than 1/8 in. At r_outer = 22 mm the same servos
+reach ~150 deg per section on 1/8 in but only ~20-40 deg on 3/16 in - a nearly
+rigid arm with almost no redundancy to resolve. Use 1/8 in. No practical disc
+diameter rescues a 3/16 in backbone; it would need r_tendon of 55-110 mm.
 
     python make_disc_stl.py            # writes all STLs
     python make_disc_stl.py --hole 5.0 # override centre hole after a fit test
@@ -36,14 +47,14 @@ except ImportError:
     sys.exit("pip install trimesh manifold3d")
 
 # --------------------------------------------------------------------------- #
-DISC_D = 50.0          # mm outer diameter
+DISC_D = 56.0          # mm outer diameter, set by the force budget above
 DISC_T = 3.0           # mm thickness
-ROD_D = 4.7625         # 3/16 in fiberglass rod
+ROD_D = 3.175          # 1/8 in fiberglass rod (see --rod for 3/16 in)
 HOLE_CLEAR = 0.15      # slip fit; printers shrink holes, see --fit-test
 
 TENDON_D = 2.0         # generous for 0.79 mm cable; sub-2 mm holes print badly
-R_INNER = 10.0         # section A tendon circle
-R_OUTER = 18.0         # section B tendon circle
+R_INNER = 12.0         # section A tendon circle
+R_OUTER = 22.0         # section B tendon circle
 ANGLES = (90.0, 210.0, 330.0)
 
 TAB_TILT = 65.0        # deg between marker normal and disc axis - from the
@@ -163,21 +174,30 @@ def report(mesh, name):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("--hole", type=float, default=ROD_D + HOLE_CLEAR,
-                    help="centre hole diameter, mm (default %(default).2f)")
+    ap.add_argument("--hole", type=float, default=None,
+                    help="centre hole diameter, mm (default: rod + clearance)")
+    ap.add_argument("--rod", type=float, default=ROD_D,
+                    help="backbone diameter, mm. 3.175 = 1/8 in (recommended), "
+                         "4.7625 = 3/16 in (too stiff for these servos)")
     args = ap.parse_args()
     os.makedirs(OUT, exist_ok=True)
+    hole = args.hole if args.hole is not None else args.rod + HOLE_CLEAR
 
-    print(f"centre hole {args.hole:.2f} mm for a {ROD_D:.4f} mm rod "
-          f"({args.hole-ROD_D:+.2f} mm clearance)\n")
+    print(f"centre hole {hole:.2f} mm for a {args.rod:.4f} mm rod "
+          f"({hole-args.rod:+.2f} mm clearance)")
+    if args.rod > 4.0:
+        print("  WARNING: a 3/16 in backbone is ~5x stiffer than 1/8 in. These")
+        print("  servos will only bend it ~20-40 deg per section, leaving almost")
+        print("  no redundancy for the experiment to study.")
+    print(f"  tendon radii {R_INNER} / {R_OUTER} mm, disc {DISC_D} mm\n")
 
     allok = True
-    d = make_disc(args.hole, with_tab=True)
+    d = make_disc(hole, with_tab=True)
     allok &= report(d, "disc_with_tab.stl")
     allok &= check_clearance(d)
     d.export(f"{OUT}/disc_with_tab.stl")
 
-    p = make_disc(args.hole, with_tab=False)
+    p = make_disc(hole, with_tab=False)
     allok &= report(p, "disc_plain.stl")
     p.export(f"{OUT}/disc_plain.stl")
 
