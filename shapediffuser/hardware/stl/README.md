@@ -26,9 +26,10 @@ your printer's offset, then apply it:
 
 | file | what | qty |
 |---|---|---|
-| `fit_test.stl` | hole-size coupon, print this first | 1 |
-| `disc_with_tab.stl` | spacer disc with the marker tab built in | 6 |
-| `disc_plain.stl` | same disc, no tab (spares / experiments) | as needed |
+| `fit_test.3mf` | hole-size coupon, print this first | 1 |
+| `plate_6_discs.3mf` | all six discs pre-arranged, one job | 1 print |
+| `disc_with_tab.3mf` | a single disc, if printing individually | 6 |
+| `disc_plain.3mf` | same disc, no tab (spares / experiments) | as needed |
 
 ## STL is not a printable file
 
@@ -39,6 +40,11 @@ and nozzle. Slicing software converts one to the other:
     STL  ->  slicer  ->  .gcode  ->  printer
 
 ### Creality K1 Max
+
+**Use the .3mf files.** They carry units and a proper scene graph and avoid
+STL's vertex-indexing quirks. `.stl` versions are kept only for tools that
+cannot read 3MF. All files are well under 200 KB, far below the point where
+mesh complexity could stutter at high speed.
 
 Use **Creality Print** (official, ships a K1 Max profile) or **OrcaSlicer**
 (better quality, has a K1 Max profile too). Either one:
@@ -60,8 +66,27 @@ stick entirely, and is the easier path once it is set up.
 - **No supports needed.** The tab underside sits at 65 deg from horizontal and
   its base is fully gusseted; verified there is zero surface below 45 deg.
 - No brim needed; the 56 mm footprint is stable.
-- All six discs fit on one plate - the K1 Max bed is 300 x 300 mm and each
-  part is 71 x 56 mm.
+- All six discs fit on one plate - `plate_6_discs.3mf` is pre-arranged at
+  231 x 121 mm on the 300 x 300 mm bed.
+
+### Speed, for these parts specifically
+
+The K1 Max will happily run 600 mm/s, but **do not chase top speed here.**
+This design leans on dimensional accuracy in two places:
+
+- the 3.32 mm centre hole is a slip fit, and it is what holds each disc
+  square to the backbone - the whole reason for printing rather than drilling
+- the 2 mm tendon holes must not close up
+
+Ringing and corner bulge from high acceleration land directly on those
+features. Keep outer walls slow (the 200-300 mm/s the K1 profiles use is
+already fine) and let infill run fast. The parts are small enough that the
+time saved by pushing wall speed is a couple of minutes per disc, against a
+fit you cannot recover without reprinting.
+
+Run the printer's input-shaping calibration before the batch - the K1 Max
+does this from its own menu, and it is what makes fast moves dimensionally
+honest.
 
 ## Geometry (all verified against the mesh)
 

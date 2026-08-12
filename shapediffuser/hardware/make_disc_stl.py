@@ -119,16 +119,21 @@ def make_disc(center_hole_d: float, with_tab: bool = True) -> trimesh.Trimesh:
     return disc
 
 
-def make_fit_test() -> trimesh.Trimesh:
+def make_fit_test(rod_d: float) -> trimesh.Trimesh:
     """Coupon with a range of centre holes: print it first, find what fits.
 
     Printers undersize holes by 0.1-0.4 mm depending on machine, material and
     slicer. Rather than guess, print this, push the rod into each hole, and use
     the smallest that slides without force.
+
+    Sizes are derived from the rod actually being used - an earlier version
+    hardcoded 4.7-5.1 mm for a 3/16 in rod and would have been useless once
+    the design moved to 1/8 in.
     """
+    sizes = tuple(round(rod_d + 0.05 + 0.1 * k, 2) for k in range(5))
     plate = trimesh.creation.box(extents=[80.0, 22.0, DISC_T])
     cuts, labels = [], []
-    for i, d in enumerate((4.7, 4.8, 4.9, 5.0, 5.1)):
+    for i, d in enumerate(sizes):
         x = -32.0 + i * 16.0
         m = trimesh.transformations.translation_matrix([x, 0.0, 0.0])
         cuts.append(_cyl(d, DISC_T * 4, transform=m))
@@ -167,6 +172,17 @@ def check_clearance(mesh) -> bool:
     return ok
 
 
+def _write(mesh, stem):
+    """Write both .3mf and .stl.
+
+    3MF is the better input for Creality Print / OrcaSlicer: it carries units
+    and a proper scene graph, and avoids the vertex-indexing quirks of STL.
+    STL is kept for any tool that will not read 3MF.
+    """
+    mesh.export(f"{OUT}/{stem}.3mf")
+    mesh.export(f"{OUT}/{stem}.stl")
+
+
 def report(mesh, name):
     ok = mesh.is_watertight
     print(f"  {name:22s} watertight={str(ok):5s} volume={mesh.volume/1000:6.2f} cm3 "
@@ -195,17 +211,27 @@ def main():
 
     allok = True
     d = make_disc(hole, with_tab=True)
-    allok &= report(d, "disc_with_tab.stl")
+    allok &= report(d, "disc_with_tab")
     allok &= check_clearance(d)
-    d.export(f"{OUT}/disc_with_tab.stl")
+    _write(d, "disc_with_tab")
 
     p = make_disc(hole, with_tab=False)
-    allok &= report(p, "disc_plain.stl")
-    p.export(f"{OUT}/disc_plain.stl")
+    allok &= report(p, "disc_plain")
+    _write(p, "disc_plain")
 
-    f, labels = make_fit_test()
+    f, labels = make_fit_test(args.rod)
     allok &= report(f, "fit_test.stl")
-    f.export(f"{OUT}/fit_test.stl")
+    _write(f, "fit_test")
+
+    # six discs arranged on one plate, ready to slice in a single job
+    plate = []
+    for i in range(6):
+        c = d.copy()
+        c.apply_translation([(i % 3) * 80.0 - 80.0, (i // 3) * 65.0 - 32.5, 0.0])
+        plate.append(c)
+    six = trimesh.util.concatenate(plate)
+    allok &= report(six, "plate_6_discs")
+    _write(six, "plate_6_discs")
 
     print(f"\nfit-test coupon holes: " + ", ".join(labels))
     print(f"PRINT MARKERS AT {MARKER_MM:.0f} mm ({MARKER_MM/25.4:.2f} in) for these tabs")
