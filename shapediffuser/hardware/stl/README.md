@@ -30,12 +30,38 @@ your printer's offset, then apply it:
 | `disc_with_tab.stl` | spacer disc with the marker tab built in | 6 |
 | `disc_plain.stl` | same disc, no tab (spares / experiments) | as needed |
 
+## STL is not a printable file
+
+A 3D printer cannot read STL from a USB stick. STL describes a shape; the
+printer needs G-code, which is toolpaths for one specific machine, material
+and nozzle. Slicing software converts one to the other:
+
+    STL  ->  slicer  ->  .gcode  ->  printer
+
+### Creality K1 Max
+
+Use **Creality Print** (official, ships a K1 Max profile) or **OrcaSlicer**
+(better quality, has a K1 Max profile too). Either one:
+
+1. Open the slicer, select **K1 Max** as the printer.
+2. If the hotend has been swapped for a Micro Swiss, set the nozzle diameter
+   to match the installed one - a profile expecting 0.4 mm on a 0.6 mm nozzle
+   under-extrudes badly, and vice versa.
+3. Import the STL, arrange, **Slice**, then **Export G-code** to the USB stick.
+4. Print from the printer's own file browser.
+
+The K1 Max is also networked - slicing then sending over LAN avoids the USB
+stick entirely, and is the easier path once it is set up.
+
 ## Print settings
 
 - **0.2 mm layers, 20-25% infill, PLA.** ~5 g and ~30 min per disc.
-- **Lay the disc flat** on the bed, tab pointing up. The tab needs support -
-  enable supports, or print `disc_plain.stl` and glue tabs on.
-- No brim needed; the 50 mm footprint is stable.
+- **Lay the disc flat** on the bed, tab pointing up.
+- **No supports needed.** The tab underside sits at 65 deg from horizontal and
+  its base is fully gusseted; verified there is zero surface below 45 deg.
+- No brim needed; the 56 mm footprint is stable.
+- All six discs fit on one plate - the K1 Max bed is 300 x 300 mm and each
+  part is 71 x 56 mm.
 
 ## Geometry (all verified against the mesh)
 

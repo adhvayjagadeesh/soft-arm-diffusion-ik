@@ -95,7 +95,9 @@ def make_disc(center_hole_d: float, with_tab: bool = True) -> trimesh.Trimesh:
         tab.apply_translation([TAB_X, 0.0, TAB_Z])
         # bridge rim -> tab foot so the tab is not floating
         gx0, gx1 = DISC_D / 2.0 - 4.0, TAB_X + (TAB_H / 2.0) * abs(_UP[0]) + 2.0
-        gusset = trimesh.creation.box(extents=[gx1 - gx0, 12.0, DISC_T])
+        # full tab width: a narrow gusset left the tab's lower corners floating
+        # 1.5 mm above the bed, which droops without supports
+        gusset = trimesh.creation.box(extents=[gx1 - gx0, TAB_W, DISC_T])
         gusset.apply_translation([(gx0 + gx1) / 2.0, 0.0, 0.0])
         body = trimesh.boolean.union([body, tab, gusset])
 
