@@ -59,9 +59,9 @@ def _cfg():
 
 
 _C = _cfg()
-SEG_LEN_M = _C["arm"]["seg_length"]        # 6 in per section (3 discs at 2 in pitch)
+SEG_LEN_M = _C["arm"]["seg_length"]           # 6 in per section (3 discs at 2 in pitch)
 N_SEGMENTS = _C["arm"]["n_segments"]
-R_OUTER_M = _C["arm"]["tendon_r_outer"]    # moment arm of the outer tendon circle
+R_OUTER_M = _C["hardware"]["tendon_r_outer"]  # moment arm of the outer tendon circle
 
 
 # --------------------------------------------------------------------------- #

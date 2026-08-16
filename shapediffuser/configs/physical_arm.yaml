@@ -34,12 +34,20 @@ arm:
   # bending stiffness goes as radius^4, so the old 3/16 in value (0.0024) made
   # the simulated arm 5.2x stiffer than the real one.
   rod_radius: 0.0015875
-  # Tendon circles on the printed disc, metres. The moment arm that converts
-  # cable tension into bending; read by calibrate_arm.py rather than restated.
-  tendon_r_inner: 0.012
-  tendon_r_outer: 0.022
+
+# Fabrication constants. These live OUTSIDE arm: because generate_data.py does
+# PCCArm(**cfg["arm"]), so every key there must be a PCCArm constructor
+# argument - adding one here that is not would raise TypeError at the start of
+# a data run. Kept in this file anyway so the physical build has one source of
+# truth rather than a number restated in each script that needs it.
+hardware:
+  tendon_r_inner: 0.012     # inner tendon circle on the printed disc, m
+  tendon_r_outer: 0.022     # outer circle; the moment arm in the force budget
   disc_diameter: 0.056      # printed disc, was 1.5 in when discs were drilled
+  disc_thickness: 0.003
   marker_side: 0.030        # ArUco side the printed tabs take; see vision.py
+  backbone_free_length: 0.305
+  plate_hole: 0.00635       # base plate centre hole as DRILLED (1/4 in)
 
 data:
   n_train: 500000
