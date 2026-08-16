@@ -14,13 +14,39 @@ If you must use 3/16 in, regenerate with `--rod 4.7625` and expect a stiff arm.
 
 ## Printing
 
-Print `fit_test.stl` FIRST. Push the fiberglass rod into each hole and use the
-smallest one it slides into without force; hole size is encoded by the notches
-below it. The coupon spans 4.7-5.1 mm, sized for a 3/16 in rod - for the
-recommended 1/8 in rod the target is 3.32 mm, so use the coupon only to learn
-your printer's offset, then apply it:
+Print `fit_test.3mf` FIRST.
 
-    python ../make_disc_stl.py --hole 3.4
+**The coupon is cut for a 1/8 in (3.175 mm) rod.** Its six holes run 3.27 to
+4.03 mm. A 3/16 in rod is 4.7625 mm and will not enter any of them - that is
+the coupon telling you the rod is wrong, not the printer.
+
+Confirm the rod before you conclude anything: the **top** edge carries a tally
+in 32nds of an inch, so **4 notches = 1/8 in**, 6 would mean 3/16 in. Caliper
+the rod and check it matches.
+
+Then push the rod into each hole and use the smallest it slides into without
+force. Hole size is the tally on the **bottom** edge:
+
+| bottom notches | hole |
+|---|---|
+| 1 | 3.27 mm |
+| 2 | 3.42 mm |
+| 3 | 3.57 mm |
+| 4 | 3.72 mm |
+| 5 | 3.88 mm |
+| 6 | 4.03 mm |
+
+The discs ship with a 3.32 mm hole. If a different hole fits best, regenerate
+the discs with it before printing all six:
+
+    python ../make_disc_stl.py --hole 3.57
+
+You do not need the rod to check the printer. Caliper the printed holes
+directly and compare against the table - the difference is your machine's hole
+offset, and it should be 0.1-0.3 mm undersize. If it is under 0.45 mm the
+already-printed 3.32 mm discs are fine.
+
+If you are using 3/16 in anyway, regenerate the coupon too: `--rod 4.7625`.
 
 ## Files
 

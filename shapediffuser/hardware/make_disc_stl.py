@@ -119,6 +119,12 @@ def make_disc(center_hole_d: float, with_tab: bool = True) -> trimesh.Trimesh:
     return disc
 
 
+N_FIT = 6              # holes on the coupon
+FIT_START = 0.10       # smallest clearance over the rod
+FIT_STEP = 0.15        # so the largest hole is rod + 0.85 mm
+FIT_PITCH = 18.0
+
+
 def make_fit_test(rod_d: float) -> trimesh.Trimesh:
     """Coupon with a range of centre holes: print it first, find what fits.
 
@@ -126,25 +132,52 @@ def make_fit_test(rod_d: float) -> trimesh.Trimesh:
     slicer. Rather than guess, print this, push the rod into each hole, and use
     the smallest that slides without force.
 
-    Sizes are derived from the rod actually being used - an earlier version
-    hardcoded 4.7-5.1 mm for a 3/16 in rod and would have been useless once
-    the design moved to 1/8 in.
+    Two design rules here were both learned by the coupon failing in the field.
+
+    RULE 1: the largest hole must be loose enough that SOMETHING always fits.
+    The first version ran rod+0.05 to rod+0.45, so a printer that undersized by
+    more than 0.45 mm reported "nothing fits" - a null result indistinguishable
+    from a scaling error, which is exactly how it was misread. The range now
+    runs to rod+0.85, past any plausible single-wall shrinkage, so a coupon
+    where nothing fits is positive evidence that the ROD is wrong, not the
+    print.
+
+    RULE 2: the coupon must say what rod it is for. The printed part carried no
+    record of its own design rod, so a coupon cut for 1/8 in was tested against
+    a 3/16 in rod - a 1.14 mm mismatch that no print setting could explain, and
+    which cost a print cycle to diagnose. The tally notches along the TOP edge
+    now encode the rod in 32nds of an inch: 4 notches = 1/8 in, 6 = 3/16 in.
+    Size tallies stay on the BOTTOM edge and are narrower.
     """
-    sizes = tuple(round(rod_d + 0.05 + 0.1 * k, 2) for k in range(5))
-    plate = trimesh.creation.box(extents=[80.0, 22.0, DISC_T])
+    sizes = tuple(round(rod_d + FIT_START + FIT_STEP * k, 2) for k in range(N_FIT))
+    span = (N_FIT - 1) * FIT_PITCH
+    plate = trimesh.creation.box(extents=[span + 22.0, 26.0, DISC_T])
+
+    def tally(n, x0, y, w, pitch):
+        out = []
+        for k in range(n):
+            b = trimesh.creation.box(extents=[w, w, DISC_T * 4])
+            b.apply_translation([x0 + k * pitch, y, 0.0])
+            out.append(b)
+        return out
+
     cuts, labels = [], []
     for i, d in enumerate(sizes):
-        x = -32.0 + i * 16.0
+        x = -span / 2.0 + i * FIT_PITCH
         m = trimesh.transformations.translation_matrix([x, 0.0, 0.0])
         cuts.append(_cyl(d, DISC_T * 4, transform=m))
-        # notches below each hole encode its size: i+1 marks
-        for k in range(i + 1):
-            n = trimesh.creation.box(extents=[1.2, 1.2, DISC_T * 4])
-            n.apply_translation([x - 3.0 + k * 1.8, -8.5, 0.0])
-            cuts.append(n)
-        labels.append(f"{d:.1f}mm = {i+1} notch{'es' if i else ''}")
+        # size tally, bottom edge. 1.3 mm marks on a 2.6 mm pitch: the previous
+        # 0.6 mm gap was under two extrusion widths and blurred into one blob.
+        w, pitch = 1.3, 2.6
+        cuts += tally(i + 1, x - ((i + 1) * pitch - pitch) / 2.0, -9.5, w, pitch)
+        labels.append(f"{d:.2f} mm = {i+1} bottom notch{'es' if i else ''}")
+
+    # rod ID, top edge: rod diameter in 32nds of an inch
+    n_id = int(round(rod_d / (25.4 / 32.0)))
+    cuts += tally(n_id, -span / 2.0 - 6.0, 9.5, 2.0, 3.4)
+
     out = trimesh.boolean.difference([plate] + cuts)
-    return out, labels
+    return out, labels, n_id
 
 
 def check_clearance(mesh) -> bool:
@@ -219,8 +252,8 @@ def main():
     allok &= report(p, "disc_plain")
     _write(p, "disc_plain")
 
-    f, labels = make_fit_test(args.rod)
-    allok &= report(f, "fit_test.stl")
+    f, labels, n_id = make_fit_test(args.rod)
+    allok &= report(f, "fit_test")
     _write(f, "fit_test")
 
     # six discs arranged on one plate, ready to slice in a single job
@@ -233,7 +266,12 @@ def main():
     allok &= report(six, "plate_6_discs")
     _write(six, "plate_6_discs")
 
-    print(f"\nfit-test coupon holes: " + ", ".join(labels))
+    print("\nfit-test coupon:")
+    for s in labels:
+        print(f"    {s}")
+    print(f"  TOP edge carries {n_id} notches = {n_id}/32 in = the rod this coupon is cut for.")
+    print(f"  Check that against the rod with calipers BEFORE concluding anything")
+    print(f"  about the print: {args.rod:.3f} mm is what these holes assume.")
     print(f"PRINT MARKERS AT {MARKER_MM:.0f} mm ({MARKER_MM/25.4:.2f} in) for these tabs")
     print(f"\nwrote to {OUT}/")
     if not allok:
