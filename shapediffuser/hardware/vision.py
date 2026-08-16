@@ -10,7 +10,7 @@ Run in this order:
     python vision.py --preview                  # find the camera, frame the arm
     python vision.py --capture-calib            # 15-20 checkerboard shots
     python vision.py --calibrate                # -> camera_calib.npz
-    python vision.py --size-test                # is 1.25 in enough at your distance?
+    python vision.py --size-test                # is 30 mm enough at your distance?
     python vision.py --noise-floor --sep 100.0  # the number the paper needs
 
     pip install opencv-contrib-python
@@ -247,7 +247,7 @@ def size_test():
                 break
     cv2.destroyAllWindows()
     print(f"\n{'id':>4} {'size':>9} {'mean px':>9} {'detected':>9}")
-    known = {10: "1.25 in", 11: "1.00 in", 12: "0.75 in"}
+    known = {10: "30 mm", 11: "25 mm", 12: "20 mm"}   # markers_sizetest.pdf
     for mid in sorted(hist):
         v = np.array(hist[mid])
         print(f"{mid:>4} {known.get(mid,'?'):>9} {v.mean():>9.1f} {len(v):>9}")
