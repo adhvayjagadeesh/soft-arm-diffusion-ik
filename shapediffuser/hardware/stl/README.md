@@ -53,6 +53,7 @@ If you are using 3/16 in anyway, regenerate the coupon too: `--rod 4.7625`.
 | file | what | qty |
 |---|---|---|
 | `fit_test.3mf` | hole-size coupon, print this first | 1 |
+| `base_bushing.3mf` | adapts the 1/4 in base-plate hole to the rod | 1 |
 | `plate_6_discs.3mf` | all six discs pre-arranged, one job | 1 print |
 | `disc_with_tab.3mf` | a single disc, if printing individually | 6 |
 | `disc_plain.3mf` | same disc, no tab (spares / experiments) | as needed |

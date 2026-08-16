@@ -180,6 +180,33 @@ def make_fit_test(rod_d: float) -> trimesh.Trimesh:
     return out, labels, n_id
 
 
+PLATE_HOLE = 6.35      # 1/4 in, as the base plate was actually drilled
+BUSH_SHRINK = 0.15     # printed outer surfaces run large; undersize to drop in
+
+
+def make_bushing(center_hole_d: float, plate_hole_d: float = PLATE_HOLE,
+                 plate_t: float = 6.35) -> trimesh.Trimesh:
+    """Adapter so an oversized base-plate hole still holds the rod square.
+
+    The base plate's centre hole is a clearance hole - the rod is epoxied into
+    it and the DISCS are what hold it perpendicular. That works, but the plate
+    sets the rod's angle at the one place where an error is multiplied along
+    the whole arm, and a 1/8 in rod in a 1/4 in hole can lean ~3.2 mm before
+    the epoxy grabs.
+
+    This bushing drops into the drilled hole and restores the same slip fit the
+    discs use. It costs one 10-minute print and makes the base joint the most
+    accurately located one on the arm rather than the least. It also means a
+    hole drilled for one rod does not have to be re-drilled for another - the
+    bushing absorbs the difference.
+    """
+    body = _cyl(plate_hole_d - BUSH_SHRINK, plate_t + 0.5)
+    flange = _cyl(plate_hole_d + 6.0, 2.0)
+    flange.apply_translation([0.0, 0.0, (plate_t + 0.5) / 2.0 + 1.0])
+    bore = _cyl(center_hole_d, (plate_t + 8.0) * 2)
+    return trimesh.boolean.difference([trimesh.boolean.union([body, flange]), bore])
+
+
 def check_clearance(mesh) -> bool:
     """Does any solid material sit directly over a tendon hole?
 
@@ -230,6 +257,10 @@ def main():
     ap.add_argument("--rod", type=float, default=ROD_D,
                     help="backbone diameter, mm. 3.175 = 1/8 in (recommended), "
                          "4.7625 = 3/16 in (too stiff for these servos)")
+    ap.add_argument("--plate-hole", type=float, default=PLATE_HOLE,
+                    help="base plate centre hole as DRILLED, mm (6.35 = 1/4 in)")
+    ap.add_argument("--plate-t", type=float, default=6.35,
+                    help="base plate thickness, mm")
     args = ap.parse_args()
     os.makedirs(OUT, exist_ok=True)
     hole = args.hole if args.hole is not None else args.rod + HOLE_CLEAR
@@ -255,6 +286,10 @@ def main():
     f, labels, n_id = make_fit_test(args.rod)
     allok &= report(f, "fit_test")
     _write(f, "fit_test")
+
+    b = make_bushing(hole, args.plate_hole, args.plate_t)
+    allok &= report(b, "base_bushing")
+    _write(b, "base_bushing")
 
     # six discs arranged on one plate, ready to slice in a single job
     plate = []
