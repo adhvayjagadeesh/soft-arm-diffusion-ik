@@ -39,7 +39,19 @@ CALIB_DIR = "calib_shots"
 
 CHESSBOARD = (9, 6)          # inner corners, matches the printed board
 SQUARE_M = 0.025             # 25.0 mm squares
-MARKER_M = 1.25 * 0.0254     # 1.25 in disc markers, in metres
+
+# Marker side, in metres. THIS IS A MEASURED QUANTITY, NOT A PREFERENCE.
+# solvePnP recovers range from apparent size, so range scales linearly with
+# whatever is put here: a marker declared 5% large reads 5% far, which on a
+# 305 mm arm is 15 mm of pure bias that averaging will never remove and that
+# looks exactly like a sim-to-real gap.
+#
+# 30 mm is what the printed tabs take - a 40 mm face less a 5 mm quiet zone
+# each side. This was 1.25 in (31.75 mm) from the era of hand-cut markers on
+# hand-glued tabs, a 5.8% error left behind when the tabs became printed.
+# Measure the marker you actually printed, with calipers, black edge to black
+# edge, and put that number here.
+MARKER_M = 0.030
 
 # --------------------------------------------------------------------------- #
 # OpenCV moved the ArUco API around in 4.7 and again in 5.x. Bind once here so

@@ -46,8 +46,22 @@ SWEEP_FILE = "calib_sweep.npz"
 SPOOL_FILE = "spool_travel.json"
 FIT_FILE = "arm_calibration.json"
 
-SEG_LEN_M = 0.1524          # 6 in per section (3 discs at 2 in pitch)
-N_SEGMENTS = 2
+# Geometry comes from the config the policy is trained on. Hardcoding it here
+# is how the curvature_gain 25->10 bug survived: two files disagreed about the
+# size of the arm and neither raised an error.
+CONFIG = __file__.rsplit("/", 2)[0] + "/configs/physical_arm.yaml"
+
+
+def _cfg():
+    import yaml
+    with open(CONFIG) as f:
+        return yaml.safe_load(f)
+
+
+_C = _cfg()
+SEG_LEN_M = _C["arm"]["seg_length"]        # 6 in per section (3 discs at 2 in pitch)
+N_SEGMENTS = _C["arm"]["n_segments"]
+R_OUTER_M = _C["arm"]["tendon_r_outer"]    # moment arm of the outer tendon circle
 
 
 # --------------------------------------------------------------------------- #
@@ -78,7 +92,7 @@ def measure_spool():
     print(f"  effective capstan radius: {radius_m*1000:.3f} mm")
 
     # how many revolutions to reach a useful bend on the outer tendon circle
-    r_outer = 0.550 * 0.0254
+    r_outer = R_OUTER_M
     for kappa, label in ((6.0, "gentle, ~50 deg"), (12.0, "strong, ~105 deg")):
         travel = kappa * r_outer * SEG_LEN_M
         print(f"  {label}: needs {travel*1000:.1f} mm = "

@@ -1,7 +1,15 @@
 # The PHYSICAL tendon-driven arm (paper 2), not a simulated morphology.
 #
 # Geometry measured from the build: two actuated sections, three tendons each,
-# six spacer discs at 2 in pitch on a 3/16 in fiberglass backbone.
+# six PRINTED spacer discs at 2 in pitch on a 1/8 in fiberglass backbone.
+#
+# The backbone is 1/8 in, NOT the 3/16 in of the first parts list. Bending
+# stiffness goes as diameter^4, so 3/16 in is 5.1x stiffer and these servos
+# bend it only ~20-30 deg per section against ~90-150 deg on 1/8 in. Measured
+# consequence: the reachable workspace shrinks 50x, to a 30 mm-deep shell in
+# which the tip never leaves full extension. Modes stay resolvable either way
+# (11 mm apart against a 1.5 mm sensing floor), so this is a much weaker arm
+# rather than a broken experiment - but it is much weaker.
 #   section length 6 in = 0.1524 m,  total reach 12 in = 0.305 m
 #   success tolerance 2% of arm length, the same convention used throughout
 #   the simulation study (5 mm on a 240 mm arm)
@@ -22,7 +30,16 @@ arm:
   seg_length: 0.1524
   curvature_gain: 10.0      # PLACEHOLDER (90 deg max bend) - replace with fitted value
   points_per_seg: 3         # 3 discs per section, matching the marker layout
-  rod_radius: 0.0024        # 3/16 in rod -> 2.4 mm radius
+  # 1/8 in rod -> 1.5875 mm radius. Elastica takes this as base_radius and
+  # bending stiffness goes as radius^4, so the old 3/16 in value (0.0024) made
+  # the simulated arm 5.2x stiffer than the real one.
+  rod_radius: 0.0015875
+  # Tendon circles on the printed disc, metres. The moment arm that converts
+  # cable tension into bending; read by calibrate_arm.py rather than restated.
+  tendon_r_inner: 0.012
+  tendon_r_outer: 0.022
+  disc_diameter: 0.056      # printed disc, was 1.5 in when discs were drilled
+  marker_side: 0.030        # ArUco side the printed tabs take; see vision.py
 
 data:
   n_train: 500000

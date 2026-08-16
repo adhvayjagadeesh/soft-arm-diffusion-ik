@@ -204,16 +204,42 @@ side by side.
 \subsection{Mechanical design}
 
 The arm is a two-section tendon-driven continuum manipulator built around a
-single flexible backbone. The backbone is a $4.76\,$mm ($3/16''$) structural
+single flexible backbone. The backbone is a $3.18\,$mm ($1/8''$) structural
 fiberglass rod of free length $305\,$mm ($12''$). Six spacer discs of
-$38.1\,$mm ($1.5''$) diameter and $3.2\,$mm ($1/8''$) thickness are bonded to
+$56\,$mm diameter and $3.0\,$mm thickness are bonded to
 the backbone at a uniform $50.8\,$mm ($2''$) pitch with two-part epoxy,
 dividing the arm into two actuated sections of three discs each.
 
+Backbone diameter is set by a force budget rather than by convenience, and it
+dominates every other mechanical choice. Bending a section to curvature
+$\kappa$ requires a moment $EI\kappa$, supplied by tendon tension acting at
+the outer tendon radius, and $I$ grows as the fourth power of diameter. At the
+$22\,$mm moment arm used here, one servo at half stall bends a $1/8''$ rod
+roughly $90$--$150^\circ$ per section but a $3/16''$ rod only $20$--$30^\circ$:
+a $5.1\times$ stiffness difference that shrinks the reachable workspace by a
+factor of $50$, to a $30\,$mm-deep shell in which the tip never leaves full
+extension. Distinct solutions remain resolvable on the stiffer rod---they
+separate by $\approx\!11\,$mm against a millimetre-scale sensing floor---so the
+choice is not between a working and a broken platform, but the redundancy the
+study exists to characterize is largely absent from the stiffer one.
+
+Discs are fused-deposition printed in PLA rather than cut and drilled, for
+three reasons that bear on measurement quality. The central bore is a
+slip fit on the backbone, so each disc is held square by its own bore; a
+drilled clearance hole in stock disc material permits several degrees of tilt
+before the epoxy sets. The marker tab is part of the disc, so its
+$65^\circ$ presentation angle is identical on all six by construction rather
+than by hand-gluing---and tab orientation is the single variable simultaneous
+marker visibility is most sensitive to. Finally, hole positions are
+reproduced from one geometric description, so disc-to-disc scatter is limited
+by printer repeatability rather than by jig wear.
+
 Each disc carries seven holes: a central clearance hole for the backbone and
-six tendon guides arranged on two concentric circles at radii $8.1\,$mm and
-$14.0\,$mm, with three holes per circle at $0^\circ$, $120^\circ$ and
-$240^\circ$. Section~A's three tendons run on the inner circle and terminate
+six tendon guides arranged on two concentric circles at radii $12.0\,$mm and
+$22.0\,$mm, with three holes per circle at $90^\circ$, $210^\circ$ and
+$330^\circ$. An index notch on the rim marks the $90^\circ$ heading so that
+all six discs are keyed to a common angular reference during assembly.
+Section~A's three tendons run on the inner circle and terminate
 at disc~3; section~B's run on the outer circle, pass freely through discs 1--5,
 and terminate at disc~6. Both sections therefore actuate along
 \emph{identical} angular headings and differ only in moment arm---a
@@ -227,10 +253,13 @@ Steel rope is used rather than braided polymer line specifically to suppress
 creep: commanded tendon length must remain a stable function of actuator
 angle across thousands of cycles.
 
-All six discs are drilled through a single thickened master jig rather than
-individually marked. This converts per-disc random error, which no
-calibration can absorb, into a single systematic bias, which one gain fit per
-section absorbs exactly. \todo{report measured disc-to-disc hole scatter}
+Because all six discs are printed from one geometric description, per-disc
+random error---which no calibration can absorb---is replaced by a single
+systematic bias common to every disc, which one gain fit per section absorbs
+exactly. Printed holes come out undersized by a machine-dependent amount, so
+the bore is sized from a printed gauge coupon rather than nominally, and the
+same offset applies to all six. \todo{report measured disc-to-disc hole
+scatter and the bore offset used}
 
 \subsection{Actuation}
 
@@ -304,8 +333,12 @@ domain, the arm is sampled at a fixed settling horizon rather than at true
 static equilibrium.
 
 Markers are ArUco fiducials~\cite{garrido2014automatic} of side
-\todo{final marker size} mm, the largest that fits a $38.1\,$mm disc with an
-adequate quiet zone. Markers on discs 3 and 6 give section-boundary and tip
+$30\,$mm, the largest that fits the $40\,$mm printed marker tab with an
+adequate quiet zone. Marker side is measured with calipers rather than taken
+as nominal: monocular pose recovers range from apparent size, so a marker
+declared $5\%$ large biases every reported position $5\%$ far---on this arm
+roughly $15\,$mm of systematic error that averaging cannot remove and that
+presents exactly as a transfer gap. Markers on discs 3 and 6 give section-boundary and tip
 pose; a full set on all six discs gives whole-backbone shape for the
 shape-conditioning experiment. Detection and pose estimation use
 OpenCV~\cite{bradski2000opencv}.
