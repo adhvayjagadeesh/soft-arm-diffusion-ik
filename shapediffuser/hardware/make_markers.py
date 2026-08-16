@@ -145,15 +145,67 @@ def sizetest_sheet() -> str:
     return p
 
 
+def checkerboard_sheet(square_mm: float = 25.0, inner=(9, 6)) -> str:
+    """The calibration target --capture-calib needs.
+
+    Squares must be inner+1 in each direction: OpenCV counts INTERIOR corners,
+    so a (9,6) board is 10 x 7 squares. Getting this backwards is the usual
+    reason findChessboardCorners never fires.
+
+    The board is its own scale bar - four squares are exactly 100 mm - so a
+    misprinted sheet is caught with the same caliper check. Square size must
+    match SQUARE_M in vision.py, or every intrinsic comes out scaled.
+    """
+    nx, ny = inner[0] + 1, inner[1] + 1
+    # A 10x7 board at 25 mm is 250x175, which only fits Letter standing up.
+    # Orientation is free: findChessboardCorners is given the board rotated
+    # every which way during capture anyway, so print it whichever way fits
+    # and keep the squares as large as possible - a bigger board calibrates
+    # better than a shrunken one.
+    if nx * square_mm > PAGE_W - 8:
+        nx, ny = ny, nx
+    w, h = nx * square_mm, ny * square_mm
+    if w > PAGE_W - 8 or h > PAGE_H - 26:
+        sys.exit(f"board {w:.0f}x{h:.0f} mm does not fit US Letter - "
+                 f"reduce --square")
+    fig = plt.figure(figsize=(PAGE_W / 25.4, PAGE_H / 25.4))
+    ax = fig.add_axes([0, 0, 1, 1]); ax.axis("off")
+    ax.set_xlim(0, PAGE_W); ax.set_ylim(0, PAGE_H)
+    x0, y0 = (PAGE_W - w) / 2.0, (PAGE_H - h) / 2.0 - 6.0
+    for i in range(nx):
+        for j in range(ny):
+            if (i + j) % 2 == 0:
+                ax.add_patch(Rectangle((x0 + i * square_mm, y0 + j * square_mm),
+                                       square_mm, square_mm, fc="black", ec="none"))
+    ax.text(PAGE_W / 2, PAGE_H - 8,
+            f"Camera calibration board - {inner[0]}x{inner[1]} inner corners, "
+            f"{square_mm:.0f} mm squares", ha="center", va="top",
+            fontsize=11, weight="bold")
+    ax.text(PAGE_W / 2, PAGE_H - 15,
+            "Print at 100%. CHECK: any 4 squares in a row = 100.0 mm exactly. "
+            "Mount flat on rigid board - a curled sheet corrupts intrinsics.",
+            ha="center", va="top", fontsize=8)
+    ax.text(PAGE_W / 2, y0 - 6,
+            f"vision.py must have CHESSBOARD = {inner} and "
+            f"SQUARE_M = {square_mm/1000:.3f}", ha="center", va="top",
+            fontsize=8, style="italic")
+    p = f"{OUT}/calibration_board.pdf"
+    fig.savefig(p); plt.close(fig)
+    return p
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--side", type=float, default=30.0,
                     help="disc marker side in mm (default 30, what the tabs take)")
+    ap.add_argument("--square", type=float, default=25.0,
+                    help="calibration board square size, mm (match vision.SQUARE_M)")
     args = ap.parse_args()
 
     a = discs_sheet(args.side)
     b = sizetest_sheet()
-    print(f"wrote {a}\n      {b}")
+    c = checkerboard_sheet(args.square)
+    print(f"wrote {a}\n      {b}\n      {c}")
     print(f"\n  1. Print BOTH at 100% scale - 'Actual size', not 'Fit to page'.")
     print(f"  2. Caliper the 100 mm bar on each page. It must read 100.0 mm.")
     print(f"  3. vision.py MARKER_M must equal the disc marker side: "
