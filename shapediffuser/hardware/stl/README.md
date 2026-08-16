@@ -2,15 +2,57 @@
 
 ## Read this first: use a 1/8 in backbone, not 3/16 in
 
-Stiffness scales as diameter^4, so a 3/16 in rod is ~5x stiffer than 1/8 in.
-With these servos and a 22 mm tendon radius that is the difference between
-~150 deg of bend per section and ~20-40 deg - a nearly rigid arm with almost
-no redundancy left for the experiment to study. No disc diameter fixes it:
-a 3/16 in backbone would need a tendon radius of 55-110 mm.
+Stiffness scales as diameter^4, so a 3/16 in rod is 5.1x stiffer than 1/8 in.
+With these servos and a 22 mm tendon radius that is 90-150 deg of bend per
+section against 20-30 deg. Measured consequence: the reachable workspace
+shrinks 50x, from 67,000 cm3 to 1,400 cm3, and collapses to a 30 mm-deep
+shell in which the tip never leaves full extension - the arm pivots instead
+of reaching.
 
-McMaster 8543K31 is 1/8 in x 10 ft, about $9.
+Distinct solutions to one target stay resolvable on the stiff rod (11 mm
+apart against a 1.5 mm sensing floor), so this is a much weaker arm rather
+than a broken experiment. But the redundancy the study exists to characterize
+is largely gone. No disc diameter fixes it: a 3/16 in backbone needs a tendon
+radius of 67-107 mm, meaning a 145-225 mm disc.
 
 If you must use 3/16 in, regenerate with `--rod 4.7625` and expect a stiff arm.
+
+## Sourcing the backbone
+
+TAP Plastics pultruded fiberglass round rod, 1/8 in, 3 ft length (the 3 ft cut
+carries no oversize fee; 3 ft is one arm plus a full spare on a 305 mm free
+length). 65-75% glass. Bay Area stores carry it over the counter.
+
+Buy on **diameter tolerance**, not on price. The bore is a slip fit and it is
+what holds each disc square, so the rod's actual diameter sets whether the
+design works:
+
+| source | tolerance | rod received | vs a 3.32 mm bore |
+|---|---|---|---|
+| TAP | +/-0.005 in | 3.048 - 3.302 mm | fits even at worst case |
+| McMaster FRP rod | +/-0.010 in | 2.921 - 3.429 mm | worst case does NOT fit |
+
+The looser rod can arrive 0.11 mm too fat for the nominal bore before printer
+shrinkage is counted at all. It also doubles the stiffness spread, 0.72-1.36x
+against 0.85-1.17x, and that spread lands directly on the curvature gain being
+fitted.
+
+Higher glass content makes the rod stiffer, not weaker: 65-75% glass suggests
+unidirectional roving, E ~ 40-45 GPa rather than the ~20 GPa of fabric-
+reinforced stock. That still clears the 90 deg per section the 22 mm tendon
+radius was sized for. Anything up to E = 50 GPa works at this diameter.
+
+## MEASURE THE ROD BEFORE GENERATING DISCS
+
+Even at +/-0.005 in the rod spans a quarter of a millimetre, which is larger
+than the slip fit being designed. Do not assume 3.175 mm.
+
+    caliper the rod at several points, rotating at each  (pultruded rod is
+    slightly out of round and varies along its length; take the largest)
+
+    python ../make_disc_stl.py --rod 3.19      # whatever you measured
+    # print fit_test.3mf, find the smallest hole the rod slides into
+    python ../make_disc_stl.py --rod 3.19 --hole 3.57
 
 ## Printing
 
@@ -36,15 +78,24 @@ force. Hole size is the tally on the **bottom** edge:
 | 5 | 3.88 mm |
 | 6 | 4.03 mm |
 
-The discs ship with a 3.32 mm hole. If a different hole fits best, regenerate
-the discs with it before printing all six:
+Regenerate the discs with the winning hole BEFORE printing all six:
 
-    python ../make_disc_stl.py --hole 3.57
+    python ../make_disc_stl.py --rod 3.19 --hole 3.57
 
-You do not need the rod to check the printer. Caliper the printed holes
-directly and compare against the table - the difference is your machine's hole
-offset, and it should be 0.1-0.3 mm undersize. If it is under 0.45 mm the
-already-printed 3.32 mm discs are fine.
+The default 3.32 mm bore assumes ~0.15 mm of shrinkage and that is optimistic
+on at least one real printer. Measured on a K1 Max with a 0.4 nozzle: a
+3.175 mm gauge pin would not enter a nominally 3.32 mm printed hole, and a
+1.587 mm pin would not enter a nominally 2.0 mm one - so shrinkage exceeded
+0.145 mm and 0.413 mm respectively. Small holes shrink proportionally more,
+which is why the tendon holes lose so much more than the bore.
+
+The tendon holes losing 0.4 mm does NOT matter: the cable is 0.79 mm and a
+1.5 mm hole passes it easily. Only the bore has to hold a dimension.
+
+You do not need the rod to check the printer - caliper the printed coupon
+holes directly and compare against the table above. The difference is your
+machine's hole offset. Expect 0.1-0.3 mm undersize; more than that is normal
+on a fast machine and is exactly what the coupon exists to catch.
 
 If you are using 3/16 in anyway, regenerate the coupon too: `--rod 4.7625`.
 
@@ -120,12 +171,12 @@ honest.
 | feature | value |
 |---|---|
 | disc | 56.0 mm dia x 3.0 mm |
-| centre hole | 3.32 mm (slip fit on a 3.175 mm / 1-8 in rod) |
+| centre hole | 3.32 mm default - SET IT FROM THE FIT TEST, not from this table |
 | tendon holes | 2.0 mm, six of them |
 | section A circle | r = 12.0 mm, at 90/210/330 deg |
 | section B circle | r = 22.0 mm, same headings |
-| marker tab | 40 x 40 mm face, tilted **65 deg** from the disc axis |
-| index notch | on the rim at 90 deg, aligned with the tab |
+| marker tab | 40 x 40 mm face at 0 deg, tilted **65 deg** from the disc axis |
+| index notch | on the rim at 90 deg - on the tendon pair, 90 deg FROM the tab |
 
 ## Markers
 

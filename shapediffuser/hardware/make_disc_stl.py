@@ -109,7 +109,10 @@ def make_disc(center_hole_d: float, with_tab: bool = True) -> trimesh.Trimesh:
                 [r * np.cos(t), r * np.sin(t), 0.0])
             cuts.append(_cyl(TENDON_D, DISC_T * 4, transform=m))
 
-    # index notch on the rim, aligned with the 90 deg tendon pair and the tab
+    # Index notch on the rim at 90 deg, on the tendon pair. It is 90 deg FROM
+    # the tab, which sits at 0 deg - do not read it as pointing at the tab.
+    # Its job is only that every disc is keyed identically, so lining the
+    # notches up on the rod lines the tabs up too.
     notch = trimesh.creation.box(extents=[3.0, 3.0, DISC_T * 4])
     notch.apply_translation([0.0, DISC_D / 2.0, 0.0])
     cuts.append(notch)
