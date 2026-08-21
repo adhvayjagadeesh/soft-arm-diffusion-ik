@@ -58,9 +58,13 @@ than the slip fit being designed. Do not assume 3.175 mm.
 
 Print `fit_test.3mf` FIRST.
 
-**The coupon is cut for a 1/8 in (3.175 mm) rod.** Its six holes run 3.27 to
-4.03 mm. A 3/16 in rod is 4.7625 mm and will not enter any of them - that is
-the coupon telling you the rod is wrong, not the printer.
+**The coupon is cut for a 1/8 in rod.** The current one is generated for a
+measured 3.29 mm rod with a 0.78 mm printer offset, so its holes run 4.00 to
+4.75 mm NOMINAL and should come out 3.22 to 3.97 mm once printed.
+
+Those nominal sizes look absurdly large next to a 3.29 mm rod. They are not:
+this machine cuts holes ~0.78 mm undersize, so the hole you draw and the hole
+you get differ by more than the slip fit you are trying to hold.
 
 Confirm the rod before you conclude anything: the **top** edge carries a tally
 in 32nds of an inch, so **4 notches = 1/8 in**, 6 would mean 3/16 in. Caliper
@@ -69,14 +73,14 @@ the rod and check it matches.
 Then push the rod into each hole and use the smallest it slides into without
 force. Hole size is the tally on the **bottom** edge:
 
-| bottom notches | hole |
-|---|---|
-| 1 | 3.27 mm |
-| 2 | 3.42 mm |
-| 3 | 3.57 mm |
-| 4 | 3.72 mm |
-| 5 | 3.88 mm |
-| 6 | 4.03 mm |
+| bottom notches | nominal | expected once printed |
+|---|---|---|
+| 1 | 4.00 mm | 3.22 mm |
+| 2 | 4.15 mm | 3.37 mm |
+| 3 | 4.30 mm | 3.52 mm |
+| 4 | 4.45 mm | 3.67 mm |
+| 5 | 4.60 mm | 3.82 mm |
+| 6 | 4.75 mm | 3.97 mm |
 
 Regenerate the discs with the winning hole BEFORE printing all six:
 

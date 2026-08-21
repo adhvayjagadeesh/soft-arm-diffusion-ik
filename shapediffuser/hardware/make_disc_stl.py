@@ -68,11 +68,19 @@ MARKER_MM = TAB_H - 10.0     # what to print: 30 mm (1.18 in)
 # in the first version covered two tendon holes. The tab is therefore pushed
 # out until its innermost projection clears the outer tendon circle, and a
 # gusset bridges the gap from the rim. Verified numerically in check_clearance.
+#
+# This is computed from the tendon diameter ACTUALLY being cut, not from the
+# nominal constant: --shrink widens every hole, which pushes the outer tendon
+# circle's edge further out, and a tab placed for 2.0 mm holes would start to
+# shadow 2.8 mm ones.
 _t = np.radians(TAB_TILT)
 _UP = np.array([-np.cos(_t), 0.0, np.sin(_t)])       # in-plane "up" of the tab
-TAB_CLEAR_R = R_OUTER + TENDON_D / 2.0 + 1.0         # must not shadow a hole
-TAB_X = TAB_CLEAR_R + (TAB_H / 2.0) * abs(_UP[0])
-TAB_Z = (TAB_H / 2.0) * abs(_UP[2])
+
+
+def _tab_pose(tendon_d: float):
+    clear_r = R_OUTER + tendon_d / 2.0 + 1.0         # must not shadow a hole
+    return (clear_r + (TAB_H / 2.0) * abs(_UP[0]),   # TAB_X
+            (TAB_H / 2.0) * abs(_UP[2]))             # TAB_Z
 
 OUT = os.path.dirname(os.path.abspath(__file__)) + "/stl"
 
@@ -84,8 +92,10 @@ def _cyl(d, h, sections=96, transform=None):
     return c
 
 
-def make_disc(center_hole_d: float, with_tab: bool = True) -> trimesh.Trimesh:
+def make_disc(center_hole_d: float, with_tab: bool = True,
+              tendon_d: float = TENDON_D) -> trimesh.Trimesh:
     body = _cyl(DISC_D, DISC_T)
+    TAB_X, TAB_Z = _tab_pose(tendon_d)
 
     if with_tab:
         tab = trimesh.creation.box(extents=[TAB_T, TAB_W, TAB_H])
@@ -107,7 +117,7 @@ def make_disc(center_hole_d: float, with_tab: bool = True) -> trimesh.Trimesh:
             t = np.radians(a)
             m = trimesh.transformations.translation_matrix(
                 [r * np.cos(t), r * np.sin(t), 0.0])
-            cuts.append(_cyl(TENDON_D, DISC_T * 4, transform=m))
+            cuts.append(_cyl(tendon_d, DISC_T * 4, transform=m))
 
     # Index notch on the rim at 90 deg, on the tendon pair. It is 90 deg FROM
     # the tab, which sits at 0 deg - do not read it as pointing at the tab.
@@ -128,7 +138,7 @@ FIT_STEP = 0.15        # so the largest hole is rod + 0.85 mm
 FIT_PITCH = 18.0
 
 
-def make_fit_test(rod_d: float) -> trimesh.Trimesh:
+def make_fit_test(rod_d: float, sizes=None) -> trimesh.Trimesh:
     """Coupon with a range of centre holes: print it first, find what fits.
 
     Printers undersize holes by 0.1-0.4 mm depending on machine, material and
@@ -138,12 +148,23 @@ def make_fit_test(rod_d: float) -> trimesh.Trimesh:
     Two design rules here were both learned by the coupon failing in the field.
 
     RULE 1: the largest hole must be loose enough that SOMETHING always fits.
-    The first version ran rod+0.05 to rod+0.45, so a printer that undersized by
-    more than 0.45 mm reported "nothing fits" - a null result indistinguishable
-    from a scaling error, which is exactly how it was misread. The range now
-    runs to rod+0.85, past any plausible single-wall shrinkage, so a coupon
-    where nothing fits is positive evidence that the ROD is wrong, not the
-    print.
+    The first version ran rod+0.05 to rod+0.45 and returned "nothing fits" - a
+    null result indistinguishable from a scaling error, which is how it was
+    misread. It was widened to rod+0.85 and returned "nothing fits" AGAIN, on
+    a machine whose real offset is ~0.78 mm: 3-5x the 0.15-0.25 mm that
+    textbooks quote, and enough that a nominally 4.03 mm hole would not pass a
+    3.29 mm rod.
+
+    So do not trust a default range. --fit-holes takes explicit sizes, and the
+    right move after any "nothing fits" is to re-bracket around the smallest
+    offset the failure PROVES, rather than to widen by another guess. Two
+    print cycles were spent learning that a coupon which fails tells you only
+    a lower bound.
+
+    An offset that large is a symptom, not just a number: holes that small
+    alongside parts printing 0.2 mm TALL is the signature of over-extrusion.
+    Compensating it in the model works, but a flow calibration fixes the
+    cause and makes every future part come out closer to nominal.
 
     RULE 2: the coupon must say what rod it is for. The printed part carried no
     record of its own design rod, so a coupon cut for 1/8 in was tested against
@@ -152,8 +173,11 @@ def make_fit_test(rod_d: float) -> trimesh.Trimesh:
     now encode the rod in 32nds of an inch: 4 notches = 1/8 in, 6 = 3/16 in.
     Size tallies stay on the BOTTOM edge and are narrower.
     """
-    sizes = tuple(round(rod_d + FIT_START + FIT_STEP * k, 2) for k in range(N_FIT))
-    span = (N_FIT - 1) * FIT_PITCH
+    if sizes is None:
+        sizes = tuple(round(rod_d + FIT_START + FIT_STEP * k, 2)
+                      for k in range(N_FIT))
+    sizes = tuple(sizes)
+    span = (len(sizes) - 1) * FIT_PITCH
     plate = trimesh.creation.box(extents=[span + 22.0, 26.0, DISC_T])
 
     def tally(n, x0, y, w, pitch):
@@ -210,7 +234,7 @@ def make_bushing(center_hole_d: float, plate_hole_d: float = PLATE_HOLE,
     return trimesh.boolean.difference([trimesh.boolean.union([body, flange]), bore])
 
 
-def check_clearance(mesh) -> bool:
+def check_clearance(mesh, tendon_d: float = TENDON_D) -> bool:
     """Does any solid material sit directly over a tendon hole?
 
     The first design silently covered two of them - the tab leans inward and
@@ -264,12 +288,32 @@ def main():
                     help="base plate centre hole as DRILLED, mm (6.35 = 1/4 in)")
     ap.add_argument("--plate-t", type=float, default=6.35,
                     help="base plate thickness, mm")
+    ap.add_argument("--shrink", type=float, default=0.0,
+                    help="YOUR PRINTER's hole offset, mm. Every hole is cut "
+                         "this much oversize so it comes out on size. Measure "
+                         "it with fit_test, do not guess.")
+    ap.add_argument("--fit-holes", type=str, default=None,
+                    help="explicit coupon hole sizes, comma separated, when "
+                         "the default range does not bracket your printer")
     args = ap.parse_args()
     os.makedirs(OUT, exist_ok=True)
-    hole = args.hole if args.hole is not None else args.rod + HOLE_CLEAR
 
-    print(f"centre hole {hole:.2f} mm for a {args.rod:.4f} mm rod "
-          f"({hole-args.rod:+.2f} mm clearance)")
+    # The bore must clear the rod's FATTEST measured point, not its average -
+    # pultruded rod is out of round and the disc has to pass over all of it.
+    hole = args.hole if args.hole is not None else args.rod + HOLE_CLEAR
+    hole += args.shrink
+    tendon = TENDON_D + args.shrink
+
+    print(f"centre hole {hole:.2f} mm nominal for a {args.rod:.3f} mm rod")
+    if args.shrink:
+        print(f"  = {args.rod:.3f} rod + {HOLE_CLEAR:.2f} slip fit "
+              f"+ {args.shrink:.2f} printer offset")
+        print(f"  EXPECTED once printed: {hole-args.shrink:.2f} mm "
+              f"({hole-args.shrink-args.rod:+.2f} mm on the rod)")
+        print(f"  tendon holes {TENDON_D:.1f} -> {tendon:.2f} mm nominal, "
+              f"{TENDON_D:.2f} mm once printed")
+    else:
+        print(f"  ({hole-args.rod:+.2f} mm clearance, NO printer offset applied)")
     if args.rod > 4.0:
         print("  WARNING: a 3/16 in backbone is ~5x stiffer than 1/8 in. These")
         print("  servos will only bend it ~20-40 deg per section, leaving almost")
@@ -277,16 +321,18 @@ def main():
     print(f"  tendon radii {R_INNER} / {R_OUTER} mm, disc {DISC_D} mm\n")
 
     allok = True
-    d = make_disc(hole, with_tab=True)
+    d = make_disc(hole, with_tab=True, tendon_d=tendon)
     allok &= report(d, "disc_with_tab")
-    allok &= check_clearance(d)
+    allok &= check_clearance(d, tendon)
     _write(d, "disc_with_tab")
 
-    p = make_disc(hole, with_tab=False)
+    p = make_disc(hole, with_tab=False, tendon_d=tendon)
     allok &= report(p, "disc_plain")
     _write(p, "disc_plain")
 
-    f, labels, n_id = make_fit_test(args.rod)
+    fit_sizes = ([float(x) for x in args.fit_holes.split(",")]
+                 if args.fit_holes else None)
+    f, labels, n_id = make_fit_test(args.rod, fit_sizes)
     allok &= report(f, "fit_test")
     _write(f, "fit_test")
 
