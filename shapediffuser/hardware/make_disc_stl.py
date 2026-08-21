@@ -259,15 +259,32 @@ def check_clearance(mesh, tendon_d: float = TENDON_D) -> bool:
     return ok
 
 
-def _write(mesh, stem):
-    """Write both .3mf and .stl.
+# Output names carry their PRINT ORDER, because the order is not optional and
+# getting it wrong is expensive: the six-disc plate is 92 g and three hours,
+# and it must not be printed until a coupon and a single disc have confirmed
+# the bore. A directory listing now states the sequence by itself.
+NAMES = {
+    "fit_test":      "ARM-1-FIT-TEST",
+    "disc_with_tab": "ARM-2-SINGLE-DISC",
+    "plate_6_discs": "ARM-3-SIX-DISCS",
+    "base_bushing":  "ARM-4-BASE-BUSHING",
+    "disc_plain":    "ARM-X-DISC-NO-TAB",
+}
 
-    3MF is the better input for Creality Print / OrcaSlicer: it carries units
-    and a proper scene graph, and avoids the vertex-indexing quirks of STL.
-    STL is kept for any tool that will not read 3MF.
+
+def _write(mesh, stem, want_stl=False):
+    """Write .3mf, and .stl only on request.
+
+    3MF is the right input for Creality Print / OrcaSlicer: it carries units
+    and a proper scene graph. STL carries NO units, which on this project
+    already produced one round of "is the model scaled?" - so it is no longer
+    written by default. Pass --stl for a tool that cannot read 3MF.
     """
-    mesh.export(f"{OUT}/{stem}.3mf")
-    mesh.export(f"{OUT}/{stem}.stl")
+    name = NAMES.get(stem, stem)
+    mesh.export(f"{OUT}/{name}.3mf")
+    if want_stl:
+        mesh.export(f"{OUT}/{name}.stl")
+    return name
 
 
 def report(mesh, name):
@@ -295,6 +312,11 @@ def main():
     ap.add_argument("--fit-holes", type=str, default=None,
                     help="explicit coupon hole sizes, comma separated, when "
                          "the default range does not bracket your printer")
+    ap.add_argument("--stl", action="store_true",
+                    help="also write .stl (unitless; only for tools that "
+                         "cannot read 3MF)")
+    ap.add_argument("--plain", action="store_true",
+                    help="also write the no-tab disc (spares, not in the build)")
     args = ap.parse_args()
     os.makedirs(OUT, exist_ok=True)
 
@@ -321,24 +343,19 @@ def main():
     print(f"  tendon radii {R_INNER} / {R_OUTER} mm, disc {DISC_D} mm\n")
 
     allok = True
-    d = make_disc(hole, with_tab=True, tendon_d=tendon)
-    allok &= report(d, "disc_with_tab")
-    allok &= check_clearance(d, tendon)
-    _write(d, "disc_with_tab")
-
-    p = make_disc(hole, with_tab=False, tendon_d=tendon)
-    allok &= report(p, "disc_plain")
-    _write(p, "disc_plain")
+    written = []
 
     fit_sizes = ([float(x) for x in args.fit_holes.split(",")]
                  if args.fit_holes else None)
     f, labels, n_id = make_fit_test(args.rod, fit_sizes)
     allok &= report(f, "fit_test")
-    _write(f, "fit_test")
+    written.append((_write(f, "fit_test", args.stl), "print FIRST, ~15 min"))
 
-    b = make_bushing(hole, args.plate_hole, args.plate_t)
-    allok &= report(b, "base_bushing")
-    _write(b, "base_bushing")
+    d = make_disc(hole, with_tab=True, tendon_d=tendon)
+    allok &= report(d, "disc_with_tab")
+    allok &= check_clearance(d, tendon)
+    written.append((_write(d, "disc_with_tab", args.stl),
+                    "print SECOND, ~30 min - confirms the bore"))
 
     # six discs arranged on one plate, ready to slice in a single job
     plate = []
@@ -348,7 +365,18 @@ def main():
         plate.append(c)
     six = trimesh.util.concatenate(plate)
     allok &= report(six, "plate_6_discs")
-    _write(six, "plate_6_discs")
+    written.append((_write(six, "plate_6_discs", args.stl),
+                    "print THIRD, ~3 h - only after the bore is confirmed"))
+
+    b = make_bushing(hole, args.plate_hole, args.plate_t)
+    allok &= report(b, "base_bushing")
+    written.append((_write(b, "base_bushing", args.stl),
+                    "print with the discs, <1 min"))
+
+    if args.plain:
+        p = make_disc(hole, with_tab=False, tendon_d=tendon)
+        allok &= report(p, "disc_plain")
+        written.append((_write(p, "disc_plain", args.stl), "spare, not in the build"))
 
     print("\nfit-test coupon:")
     for s in labels:
@@ -357,7 +385,13 @@ def main():
     print(f"  Check that against the rod with calipers BEFORE concluding anything")
     print(f"  about the print: {args.rod:.3f} mm is what these holes assume.")
     print(f"PRINT MARKERS AT {MARKER_MM:.0f} mm ({MARKER_MM/25.4:.2f} in) for these tabs")
-    print(f"\nwrote to {OUT}/")
+
+    print(f"\nwrote to {OUT}/  IN PRINT ORDER:")
+    for name, when in written:
+        print(f"  {name+'.3mf':26} {when}")
+    if not args.stl:
+        print("\n  (.stl not written - STL carries no units and cost this project a"
+              "\n   round of 'is it scaled?'. Use --stl only for a tool that needs it.)")
     if not allok:
         print("\nWARNING: a mesh is not watertight - slicers may misbehave.")
     return 0 if allok else 1

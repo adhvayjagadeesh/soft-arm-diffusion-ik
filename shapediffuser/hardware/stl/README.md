@@ -27,15 +27,18 @@ Buy on **diameter tolerance**, not on price. The bore is a slip fit and it is
 what holds each disc square, so the rod's actual diameter sets whether the
 design works:
 
-| source | tolerance | rod received | vs a 3.32 mm bore |
+| source | tolerance | rod received | clearance in a 3.44 mm printed bore |
 |---|---|---|---|
-| TAP | +/-0.005 in | 3.048 - 3.302 mm | fits even at worst case |
-| McMaster FRP rod | +/-0.010 in | 2.921 - 3.429 mm | worst case does NOT fit |
+| TAP | +/-0.005 in | 3.048 - 3.302 mm | +0.14 to +0.39 mm, always fits |
+| McMaster FRP rod | +/-0.010 in | 2.921 - 3.429 mm | +0.01 mm at worst - SEIZES |
 
-The looser rod can arrive 0.11 mm too fat for the nominal bore before printer
-shrinkage is counted at all. It also doubles the stiffness spread, 0.72-1.36x
-against 0.85-1.17x, and that spread lands directly on the curvature gain being
-fitted.
+The looser rod can arrive with 0.01 mm of clearance, which is not a slip fit
+at all. It also doubles the stiffness spread, 0.72-1.36x against 0.85-1.17x,
+and that spread lands directly on the curvature gain being fitted.
+
+The rod actually received measured 3.19 / 3.20 / 3.22 / 3.29 mm - 0.10 mm out
+of round. The bore is sized from the FATTEST point: the disc has to pass over
+all of it, not over the average.
 
 Higher glass content makes the rod stiffer, not weaker: 65-75% glass suggests
 unidirectional roving, E ~ 40-45 GPa rather than the ~20 GPa of fabric-
@@ -50,13 +53,13 @@ than the slip fit being designed. Do not assume 3.175 mm.
     caliper the rod at several points, rotating at each  (pultruded rod is
     slightly out of round and varies along its length; take the largest)
 
-    python ../make_disc_stl.py --rod 3.19      # whatever you measured
-    # print fit_test.3mf, find the smallest hole the rod slides into
-    python ../make_disc_stl.py --rod 3.19 --hole 3.57
+    python ../make_disc_stl.py --rod 3.29 --shrink 0.78
+    # print ARM-1-FIT-TEST, find the smallest hole the rod slides into,
+    # then re-run with the --shrink your printer actually shows
 
 ## Printing
 
-Print `fit_test.3mf` FIRST.
+Print `ARM-1-FIT-TEST.3mf` FIRST.
 
 **The coupon is cut for a 1/8 in rod.** The current one is generated for a
 measured 3.29 mm rod with a 0.78 mm printer offset, so its holes run 4.00 to
@@ -84,34 +87,40 @@ force. Hole size is the tally on the **bottom** edge:
 
 Regenerate the discs with the winning hole BEFORE printing all six:
 
-    python ../make_disc_stl.py --rod 3.19 --hole 3.57
+    python ../make_disc_stl.py --rod 3.29 --shrink 0.78
 
-The default 3.32 mm bore assumes ~0.15 mm of shrinkage and that is optimistic
-on at least one real printer. Measured on a K1 Max with a 0.4 nozzle: a
-3.175 mm gauge pin would not enter a nominally 3.32 mm printed hole, and a
-1.587 mm pin would not enter a nominally 2.0 mm one - so shrinkage exceeded
-0.145 mm and 0.413 mm respectively. Small holes shrink proportionally more,
-which is why the tendon holes lose so much more than the bore.
+`--shrink` is YOUR PRINTER's hole offset and it applies to every hole, not
+just the bore. Measured on this K1 Max with a 0.4 nozzle, from three gauge
+failures: a 1/16 in bit would not enter a 2.00 mm hole, a 1/8 in bit would not
+enter a 3.32 mm hole, and a 3.29 mm rod would not enter a 4.03 mm hole. One
+constant offset of 0.75-0.80 mm satisfies all three. 0.78 is used.
 
-The tendon holes losing 0.4 mm does NOT matter: the cable is 0.79 mm and a
-1.5 mm hole passes it easily. Only the bore has to hold a dimension.
+That is 3-5x the 0.15-0.25 mm usually quoted. Alongside parts measuring 0.2 mm
+TALL against nominal, the signature is OVER-EXTRUSION - too much plastic per
+mm of path. Compensating in the model works, and is what --shrink does, but a
+flow calibration fixes the cause and is worth doing before the six-disc batch.
 
-You do not need the rod to check the printer - caliper the printed coupon
-holes directly and compare against the table above. The difference is your
-machine's hole offset. Expect 0.1-0.3 mm undersize; more than that is normal
-on a fast machine and is exactly what the coupon exists to catch.
+You do not need the rod to measure the offset - caliper the printed coupon
+holes and compare against the table above.
 
 If you are using 3/16 in anyway, regenerate the coupon too: `--rod 4.7625`.
 
 ## Files
 
-| file | what | qty |
+| file | what | when |
 |---|---|---|
-| `fit_test.3mf` | hole-size coupon, print this first | 1 |
-| `base_bushing.3mf` | adapts the 1/4 in base-plate hole to the rod | 1 |
-| `plate_6_discs.3mf` | all six discs pre-arranged, one job | 1 print |
-| `disc_with_tab.3mf` | a single disc, if printing individually | 6 |
-| `disc_plain.3mf` | same disc, no tab (spares / experiments) | as needed |
+| `ARM-1-FIT-TEST.3mf` | hole-size coupon | FIRST, ~15 min |
+| `ARM-2-SINGLE-DISC.3mf` | one disc, confirms the bore | SECOND, ~30 min |
+| `ARM-3-SIX-DISCS.3mf` | all six, one job | THIRD, ~3 h - only after the bore is confirmed |
+| `ARM-4-BASE-BUSHING.3mf` | adapts the 1/4 in plate hole | with the discs, <1 min |
+
+Names carry the print order because the order is not optional: the six-disc
+plate is 92 g and three hours, and must not be printed until a coupon and a
+single disc have confirmed the bore.
+
+`.stl` is no longer written. STL carries no units, which already cost this
+project one round of "is the model scaled?". Pass `--stl` if some tool needs
+it; `--plain` adds a no-tab disc for spares.
 
 ## STL is not a printable file
 
@@ -124,8 +133,9 @@ and nozzle. Slicing software converts one to the other:
 ### Creality K1 Max
 
 **Use the .3mf files.** They carry units and a proper scene graph and avoid
-STL's vertex-indexing quirks. `.stl` versions are kept only for tools that
-cannot read 3MF. All files are well under 200 KB, far below the point where
+STL's vertex-indexing quirks. STL is not written at all any more - it carries
+no units, and that ambiguity already cost this project a round of "is the
+model scaled?". All files are well under 200 KB, far below the point where
 mesh complexity could stutter at high speed.
 
 Use **Creality Print** (official, ships a K1 Max profile) or **OrcaSlicer**
@@ -135,7 +145,8 @@ Use **Creality Print** (official, ships a K1 Max profile) or **OrcaSlicer**
 2. If the hotend has been swapped for a Micro Swiss, set the nozzle diameter
    to match the installed one - a profile expecting 0.4 mm on a 0.6 mm nozzle
    under-extrudes badly, and vice versa.
-3. Import the STL, arrange, **Slice**, then **Export G-code** to the USB stick.
+3. Import the .3mf, confirm the size readout, **Slice**, then **Export
+   G-code** to the USB stick.
 4. Print from the printer's own file browser.
 
 The K1 Max is also networked - slicing then sending over LAN avoids the USB
@@ -148,7 +159,7 @@ stick entirely, and is the easier path once it is set up.
 - **No supports needed.** The tab underside sits at 65 deg from horizontal and
   its base is fully gusseted; verified there is zero surface below 45 deg.
 - No brim needed; the 56 mm footprint is stable.
-- All six discs fit on one plate - `plate_6_discs.3mf` is pre-arranged at
+- All six discs fit on one plate - `ARM-3-SIX-DISCS.3mf` is pre-arranged at
   231 x 121 mm on the 300 x 300 mm bed.
 
 ### Speed, for these parts specifically
@@ -156,9 +167,9 @@ stick entirely, and is the easier path once it is set up.
 The K1 Max will happily run 600 mm/s, but **do not chase top speed here.**
 This design leans on dimensional accuracy in two places:
 
-- the 3.32 mm centre hole is a slip fit, and it is what holds each disc
-  square to the backbone - the whole reason for printing rather than drilling
-- the 2 mm tendon holes must not close up
+- the centre bore is a slip fit, and it is what holds each disc square to
+  the backbone - the whole reason for printing rather than drilling
+- the tendon holes must not close up
 
 Ringing and corner bulge from high acceleration land directly on those
 features. Keep outer walls slow (the 200-300 mm/s the K1 profiles use is
@@ -175,8 +186,8 @@ honest.
 | feature | value |
 |---|---|
 | disc | 56.0 mm dia x 3.0 mm |
-| centre hole | 3.32 mm default - SET IT FROM THE FIT TEST, not from this table |
-| tendon holes | 2.0 mm, six of them |
+| centre bore | 4.22 mm nominal -> 3.44 mm printed, for a 3.29 mm rod |
+| tendon holes | 2.78 mm nominal -> 2.0 mm printed, six of them |
 | section A circle | r = 12.0 mm, at 90/210/330 deg |
 | section B circle | r = 22.0 mm, same headings |
 | marker tab | 40 x 40 mm face at 0 deg, tilted **65 deg** from the disc axis |
