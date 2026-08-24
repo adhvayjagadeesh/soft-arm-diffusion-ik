@@ -231,7 +231,16 @@ Discs are fused-deposition printed in PLA rather than cut and drilled, for
 three reasons that bear on measurement quality. The central bore is a
 slip fit on the backbone, so each disc is held square by its own bore; a
 drilled clearance hole in stock disc material permits several degrees of tilt
-before the epoxy sets. The marker tab is part of the disc, so its
+before the epoxy sets. Each disc carries an $8\,$mm collar around the bore
+that extends it to $6.4\,$mm of bearing length, rather than the $3\,$mm the
+disc thickness would otherwise give. The reason is quantitative: permissible
+tilt is $\arctan(c/L)$ for bore clearance $c$ over bearing length $L$, so
+doubling $L$ halves the angle, and a disc tilted $2.9^\circ$ displaces its
+outer tendon holes by $\pm1.1\,$mm axially---comparable to the entire vision
+noise floor of Sec.~\ref{sec:noise}. That displacement is \emph{random per
+disc}, since each is bonded at whatever angle it happened to occupy, so
+unlike a systematic bias it is not absorbed by a per-section gain fit. The
+collar reduces it to $\pm0.5\,$mm for under $0.2\,$cm$^3$ of material. The marker tab is part of the disc, so its
 $65^\circ$ presentation angle is identical on all six by construction rather
 than by hand-gluing---and tab orientation is the single variable simultaneous
 marker visibility is most sensitive to. Finally, hole positions are

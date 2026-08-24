@@ -215,7 +215,8 @@ honest.
 
 | feature | value |
 |---|---|
-| disc | 56.0 mm dia x 3.0 mm |
+| disc | 56.0 mm dia x 3.0 mm, + 8 mm collar 4 mm tall |
+| bore bearing length | 6.4 mm straight, then a 0.6 mm lead-in chamfer |
 | centre bore | 4.22 mm nominal -> 3.44 mm printed, for a 3.29 mm rod |
 | tendon holes | 2.78 mm nominal -> 2.0 mm printed, six of them |
 | section A circle | r = 12.0 mm, at 90/210/330 deg |
@@ -234,7 +235,13 @@ quiet zone on the 40 mm face. Regenerate at that size rather than reusing the
 1. **All six tabs must point the same way.** Staggering headings collapses
    simultaneous marker visibility from 69% to under 10% - measured, not
    guessed. Use the rim notch to align them on the rod.
-2. **The snug centre hole is doing real work.** It holds each disc square to
-   the rod by itself, which a drilled 1/4 in hole could not - that version
-   allowed ~27 deg of tilt before the epoxy set. Do not open the hole up to
-   make assembly easier.
+2. **The snug bore is doing real work, and the collar doubles it.** Permissible
+   tilt is atan(clearance / bearing length), so bore LENGTH matters as much as
+   fit. On disc thickness alone that is 3 mm and 2.9 deg, which throws the
+   outer tendon holes +/-1.1 mm - about the whole vision noise floor, and
+   random per disc because each is bonded at its own angle, so no gain fit
+   removes it. The collar takes the bearing to 6.4 mm, the tilt to 1.3 deg,
+   and the scatter to +/-0.5 mm. Do not open the bore up to make assembly
+   easier; that is what the lead-in chamfer is for.
+3. **Collars point UP, same side as the tabs.** Printed that way and assembled
+   that way.

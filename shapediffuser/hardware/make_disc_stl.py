@@ -92,10 +92,66 @@ def _cyl(d, h, sections=96, transform=None):
     return c
 
 
+BOSS_D = 8.0           # mm, collar around the bore on the top face
+BOSS_H = 4.0           # mm above the disc -> 7 mm of total bore length
+LEAD_IN = 0.6          # mm 45 deg chamfer at the bore entry
+
+
+def _frustum(r0, r1, h, sections=64):
+    """Truncated cone, built explicitly because trimesh's cone has an APEX.
+
+    A cone's tip is one vertex shared by every side face, and differencing it
+    out of the disc produced 48 broken faces on an otherwise clean mesh -
+    bisected to this feature alone, with the boss innocent. A frustum has two
+    honest rings and no degenerate vertex.
+    """
+    th = np.linspace(0, 2 * np.pi, sections, endpoint=False)
+    bot = np.c_[r0 * np.cos(th), r0 * np.sin(th), np.zeros(sections)]
+    top = np.c_[r1 * np.cos(th), r1 * np.sin(th), np.full(sections, h)]
+    v = np.vstack([bot, top, [[0, 0, 0]], [[0, 0, h]]])
+    cb, ct = 2 * sections, 2 * sections + 1
+    f = []
+    for i in range(sections):
+        j = (i + 1) % sections
+        f += [[i, j, sections + j], [i, sections + j, sections + i]]  # side
+        f += [[cb, j, i]]                                             # bottom cap
+        f += [[ct, sections + i, sections + j]]                       # top cap
+    return trimesh.Trimesh(vertices=v, faces=np.array(f), process=True)
+
+
 def make_disc(center_hole_d: float, with_tab: bool = True,
-              tendon_d: float = TENDON_D) -> trimesh.Trimesh:
+              tendon_d: float = TENDON_D, boss_h: float = BOSS_H
+              ) -> trimesh.Trimesh:
+    """One spacer disc.
+
+    The BOSS is not decoration. A bore only as deep as the disc is 3 mm of
+    bearing on a 3.29 mm rod, which permits atan(0.15/3) = 2.9 deg of tilt -
+    and a disc tilted that far moves its outer tendon holes +/-1.1 mm in Z.
+    That error is random per disc, because each one is epoxied at whatever
+    angle it happened to sit at, so no per-section gain fit can absorb it the
+    way it absorbs a systematic bias. It is also the same size as the whole
+    vision noise floor, which would put a fabrication artifact straight into
+    the quantity the transfer gap is measured against.
+
+    Extending the bore to 7 mm cuts the tilt to 1.2 deg and the tendon-hole
+    scatter to 0.47 mm, for 0.16 cm3 of plastic. Tilt goes as 1/length, so
+    this is the cheapest accuracy available anywhere in the design.
+
+    The boss goes on the TOP face: on the bottom it would be the first thing
+    the bed sees and the disc would balance on it instead of lying flat.
+    """
     body = _cyl(DISC_D, DISC_T)
     TAB_X, TAB_Z = _tab_pose(tendon_d)
+
+    if boss_h > 0:
+        # The boss reaches DOWN through the disc rather than sitting on top of
+        # it. A cylinder whose base is exactly coplanar with the disc's top
+        # face is the classic CSG degenerate case: the union came back
+        # reporting watertight but carrying 48 broken faces. Overlapping the
+        # two solids gives the boolean real volume to work with.
+        boss = _cyl(BOSS_D, boss_h + DISC_T)
+        boss.apply_translation([0.0, 0.0, boss_h / 2.0])
+        body = trimesh.boolean.union([body, boss])
 
     if with_tab:
         tab = trimesh.creation.box(extents=[TAB_T, TAB_W, TAB_H])
@@ -111,19 +167,36 @@ def make_disc(center_hole_d: float, with_tab: bool = True,
         gusset.apply_translation([(gx0 + gx1) / 2.0, 0.0, 0.0])
         body = trimesh.boolean.union([body, tab, gusset])
 
-    cuts = [_cyl(center_hole_d, DISC_T * 4)]
+    # Bore runs the full height of disc + boss.
+    z_top = DISC_T / 2.0 + boss_h
+    bore_len = (boss_h + DISC_T) * 3
+    cuts = [_cyl(center_hole_d, bore_len)]
+
+    # 45 deg lead-in at the bore entry. Threading one rod through six discs at
+    # 0.15 mm clearance is otherwise a fiddly, force-it operation, and forcing
+    # is exactly how a disc gets cocked before the epoxy sets.
+    if LEAD_IN > 0:
+        # 45 deg frustum: bore/2 at LEAD_IN below the face, growing to
+        # bore/2 + LEAD_IN at the face and continuing past it so no cut face
+        # is coplanar with the top surface.
+        eps = 0.5
+        r0 = center_hole_d / 2.0
+        ch = _frustum(r0, r0 + LEAD_IN + eps, LEAD_IN + eps)
+        ch.apply_translation([0.0, 0.0, z_top - LEAD_IN])
+        cuts.append(ch)
+
     for r, _ in ((R_INNER, "A"), (R_OUTER, "B")):
         for a in ANGLES:
             t = np.radians(a)
             m = trimesh.transformations.translation_matrix(
                 [r * np.cos(t), r * np.sin(t), 0.0])
-            cuts.append(_cyl(tendon_d, DISC_T * 4, transform=m))
+            cuts.append(_cyl(tendon_d, bore_len, transform=m))
 
     # Index notch on the rim at 90 deg, on the tendon pair. It is 90 deg FROM
     # the tab, which sits at 0 deg - do not read it as pointing at the tab.
     # Its job is only that every disc is keyed identically, so lining the
     # notches up on the rod lines the tabs up too.
-    notch = trimesh.creation.box(extents=[3.0, 3.0, DISC_T * 4])
+    notch = trimesh.creation.box(extents=[3.0, 3.0, bore_len])
     notch.apply_translation([0.0, DISC_D / 2.0, 0.0])
     cuts.append(notch)
 
@@ -288,9 +361,26 @@ def _write(mesh, stem, want_stl=False):
 
 
 def report(mesh, name):
-    ok = mesh.is_watertight
-    print(f"  {name:22s} watertight={str(ok):5s} volume={mesh.volume/1000:6.2f} cm3 "
-          f"faces={len(mesh.faces):6d}  bbox={np.round(mesh.extents,1)}")
+    """Check the FILE, not the mesh in memory.
+
+    is_watertight alone is too weak: a boss unioned on a coplanar face once
+    returned watertight=True while carrying 48 broken faces, and the defect
+    only appeared after the 3MF round trip. Since the file is what gets
+    sliced, the file is what gets verified - reloaded from disk, vertices
+    merged, and checked for broken faces as well as watertightness.
+    """
+    path = f"{OUT}/{NAMES.get(name, name)}.3mf"
+    if not os.path.exists(path):
+        print(f"  {name:22s} NOT WRITTEN")
+        return False
+    m = trimesh.load(path)
+    m = m.to_geometry() if hasattr(m, "to_geometry") else m
+    m.merge_vertices()
+    broken = len(trimesh.repair.broken_faces(m))
+    ok = m.is_watertight and broken == 0
+    flag = "" if ok else f"  <<< watertight={m.is_watertight} broken_faces={broken}"
+    print(f"  {name:22s} {'OK ' if ok else 'BAD'} volume={m.volume/1000:6.2f} cm3 "
+          f"faces={len(m.faces):6d}  bbox={np.round(m.extents,1)}{flag}")
     return ok
 
 
@@ -348,14 +438,14 @@ def main():
     fit_sizes = ([float(x) for x in args.fit_holes.split(",")]
                  if args.fit_holes else None)
     f, labels, n_id = make_fit_test(args.rod, fit_sizes)
-    allok &= report(f, "fit_test")
     written.append((_write(f, "fit_test", args.stl), "print FIRST, ~15 min"))
+    allok &= report(f, "fit_test")
 
     d = make_disc(hole, with_tab=True, tendon_d=tendon)
-    allok &= report(d, "disc_with_tab")
-    allok &= check_clearance(d, tendon)
     written.append((_write(d, "disc_with_tab", args.stl),
                     "print SECOND, ~30 min - confirms the bore"))
+    allok &= report(d, "disc_with_tab")
+    allok &= check_clearance(d, tendon)
 
     # six discs arranged on one plate, ready to slice in a single job
     plate = []
@@ -364,19 +454,19 @@ def main():
         c.apply_translation([(i % 3) * 80.0 - 80.0, (i // 3) * 65.0 - 32.5, 0.0])
         plate.append(c)
     six = trimesh.util.concatenate(plate)
-    allok &= report(six, "plate_6_discs")
     written.append((_write(six, "plate_6_discs", args.stl),
                     "print THIRD, ~3 h - only after the bore is confirmed"))
+    allok &= report(six, "plate_6_discs")
 
     b = make_bushing(hole, args.plate_hole, args.plate_t)
-    allok &= report(b, "base_bushing")
     written.append((_write(b, "base_bushing", args.stl),
                     "print with the discs, <1 min"))
+    allok &= report(b, "base_bushing")
 
     if args.plain:
         p = make_disc(hole, with_tab=False, tendon_d=tendon)
-        allok &= report(p, "disc_plain")
         written.append((_write(p, "disc_plain", args.stl), "spare, not in the build"))
+        allok &= report(p, "disc_plain")
 
     print("\nfit-test coupon:")
     for s in labels:
