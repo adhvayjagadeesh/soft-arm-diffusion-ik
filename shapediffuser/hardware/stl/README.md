@@ -154,10 +154,40 @@ stick entirely, and is the easier path once it is set up.
 
 ## Print settings
 
-- **0.2 mm layers, 20-25% infill, PLA.** ~5 g and ~30 min per disc.
+### Calibrate flow FIRST
+
+A 0.78 mm hole offset alongside parts measuring 0.2 mm TALL is over-extrusion,
+and no slicer checkbox fixes it. In OrcaSlicer: **Calibration -> Flow rate ->
+Pass 1**, print, pick the smoothest top surface, apply, then **Pass 2**. Half
+an hour, and it does more for dimensional accuracy than every setting below
+combined.
+
+### CHANGING ANY SETTING INVALIDATES --shrink
+
+The parts are drawn oversize for one specific machine configuration. Turn on
+Precise wall, or fix the flow, and holes come out near nominal - which would
+leave a 4.22 mm bore on a 3.29 mm rod, 0.93 mm of slop, and discs that flop
+instead of sitting square. Either print exactly as generated, or change the
+settings and RE-RUN the fit test before regenerating.
+
+### Settings that matter here
+
+| setting | value | why |
+|---|---|---|
+| Precise wall | **ON** | corrects outer-wall placement; attacks the bore error directly |
+| Wall loops | **3** | the bore is defined by walls, not infill |
+| Skirt loops | **2** | with 0 the nozzle is not pressure-stable when the part starts |
+| Sparse infill | 25% | supports the walls; minor on a part this solid |
+| Prime tower | **OFF** | single material |
+| xy hole/contour compensation | **0** | keep compensation in the model, not the profile - a fresh profile silently resizes every part |
+
+- **0.2 mm layers, PLA.** Makes the 3 mm disc exactly 15 layers. Do not go
+  finer: with over-extrusion, more passes make holes worse.
 - **Lay the disc flat** on the bed, tab pointing up.
 - **No supports needed.** The tab underside sits at 65 deg from horizontal and
   its base is fully gusseted; verified there is zero surface below 45 deg.
+  Supports would weld scars onto the marker face.
+- **Print sequence: by layer.** By-object with six discs risks head collisions.
 - No brim needed; the 56 mm footprint is stable.
 - All six discs fit on one plate - `ARM-3-SIX-DISCS.3mf` is pre-arranged at
   231 x 121 mm on the 300 x 300 mm bed.

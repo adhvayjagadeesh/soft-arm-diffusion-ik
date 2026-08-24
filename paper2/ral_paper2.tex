@@ -204,8 +204,12 @@ side by side.
 \subsection{Mechanical design}
 
 The arm is a two-section tendon-driven continuum manipulator built around a
-single flexible backbone. The backbone is a $3.18\,$mm ($1/8''$) structural
-fiberglass rod of free length $305\,$mm ($12''$). Six spacer discs of
+single flexible backbone. The backbone is a $3.18\,$mm ($1/8''$) pultruded
+fiberglass rod of free length $305\,$mm ($12''$), specified on diameter
+tolerance rather than on nominal size: the disc bore is a slip fit, so stock
+held to $\pm0.13\,$mm rather than $\pm0.25\,$mm is the difference between a
+bore that fits every rod in the batch and one that seizes on the thick end of
+it. Six spacer discs of
 $56\,$mm diameter and $3.0\,$mm thickness are bonded to
 the backbone at a uniform $50.8\,$mm ($2''$) pitch with two-part epoxy,
 dividing the arm into two actuated sections of three discs each.
@@ -256,10 +260,42 @@ angle across thousands of cycles.
 Because all six discs are printed from one geometric description, per-disc
 random error---which no calibration can absorb---is replaced by a single
 systematic bias common to every disc, which one gain fit per section absorbs
-exactly. Printed holes come out undersized by a machine-dependent amount, so
-the bore is sized from a printed gauge coupon rather than nominally, and the
-same offset applies to all six. \todo{report measured disc-to-disc hole
-scatter and the bore offset used}
+exactly. \todo{report measured disc-to-disc hole scatter}
+
+\subsection{Fabrication tolerance is measured, not assumed}
+\label{sec:fab}
+
+One fabrication detail is reported because ignoring it silently invalidates
+the assembly, and because it is the difference between a platform another
+group can rebuild and one that works only on the authors' printer.
+
+Fused-deposition printers cut holes undersized by a machine-specific amount.
+The figure usually quoted is $0.1$--$0.3\,$mm; on the machine used here it is
+$\approx\!0.8\,$mm, three to five times larger, verified by three independent
+gauge failures at nominal diameters of $2.0$, $3.3$ and $4.0\,$mm that a
+single constant offset explains. An offset that size is not a finish
+detail---it exceeds the slip fit being designed, so a bore drawn at nominal
+prints too small to admit the backbone at all.
+
+The offset is therefore measured with a printed gauge coupon carrying a
+graded series of bores, and applied to \emph{every} hole in the part rather
+than to the backbone bore alone. Compensating only the bore would leave the
+tendon guides closing from $2.0\,$mm to $\approx\!1.2\,$mm, which passes the
+$0.79\,$mm cable but raises the very tendon friction and hysteresis that
+Sec.~\ref{sec:noise} exists to bound. \todo{report the measured offset used}
+
+Two consequences propagate into the geometry. The compensated tendon holes
+are wider, so the marker tab is positioned from the tendon diameter actually
+being cut---a tab placed for nominal holes begins to overhang compensated
+ones. And the backbone itself is out of round: four readings along the rod
+used here span $0.10\,$mm, so the bore is sized from the \emph{largest}
+measured diameter, since each disc must pass over the rod's fattest point
+rather than its average.
+
+Because this offset is a property of the machine and not of the design, it is
+reported as a measured quantity alongside the geometry, and the generator
+takes it as an explicit parameter rather than embedding one printer's value
+in the released model.
 
 \subsection{Actuation}
 
