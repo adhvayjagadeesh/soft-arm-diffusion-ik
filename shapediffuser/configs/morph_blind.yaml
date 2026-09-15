@@ -1,0 +1,59 @@
+# THE ABLATION for morph_amortized.yaml: identical training data (every
+# sample from its own random morphology), but cond_type=tip drops the
+# morphology from the condition. The model sees the same diversity of arms
+# and is not told which one any sample came from.
+#
+# This is Paper 1's domain randomization, extended from gain-only to
+# length+gain. If this model matches the amortized one, conditioning was
+# never the point and randomization alone suffices. If it collapses, the
+# information - not the data - is what amortization needs.
+#
+# Train it on data_morph_amortized; the 'morph' array is simply unused.
+arm:
+  n_segments: 4
+  seg_length: 0.06          # nominal; generation draws per-sample from morph_ranges
+  curvature_gain: 25.0      # nominal; ditto
+  points_per_seg: 10
+  rod_radius: 0.012
+
+data:
+  n_train: 500000
+  n_val: 20000
+  mode: uniform
+  babble_step: 0.08
+  shape_points: 8
+  cond_type: tip            # SAME data as morph_amortized, morphology WITHHELD - the DR-blind ablation
+  seed: 0
+  morph_ranges:
+    seg_length: [0.04, 0.08]        # nominal 0.06 +/- 33%; total reach 0.16-0.32 m
+    curvature_gain: [15.0, 35.0]    # nominal 25 +/- 40%
+
+model:
+  hidden: 512
+  n_blocks: 6
+  T: 1000
+  cond_drop: 0.1
+  mdn_k: 8
+
+train:
+  batch_size: 1024
+  lr: 3.0e-4
+  epochs: 60
+  weight_decay: 1.0e-6
+  device: cuda
+  ckpt_dir: checkpoints_morph_blind
+
+eval:
+  n_targets_accuracy: 512
+  n_samples_per_target: 32
+  ddim_steps: 20
+  guidance: 1.5
+  success_tol: 0.005
+  n_targets_modes: 20
+  mode_pool: 2000000
+  dbscan_eps: 12.0
+  dbscan_min_samples: 5
+  mode_match_radius: 15.0
+  n_obstacle_trials: 200
+  n_obstacles: 3
+  obstacle_radius: 0.02

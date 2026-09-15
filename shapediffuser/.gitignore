@@ -31,3 +31,8 @@ checkpoints_mdn_k*/
 results_mdn_k*.json
 checkpoints_physical/
 data_physical/
+logs/
+# every checkpoint and dataset dir, present and future - they are regenerable
+checkpoints_*/
+data_*/
+logs/

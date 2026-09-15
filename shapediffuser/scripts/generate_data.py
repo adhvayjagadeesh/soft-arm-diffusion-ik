@@ -28,18 +28,23 @@ def main():
     if gain_range:
         print(f"Domain randomization: curvature_gain ~ Uniform{gain_range} per sample "
               f"(nominal arm.curvature_gain={cfg['arm']['curvature_gain']} unused for generation)")
+    morph = d.get("morph_ranges")
+    if morph:
+        morph = {k: tuple(v) for k, v in morph.items()}
+        print(f"Amortized morphology: per-sample seg_length ~ U{morph['seg_length']}, "
+              f"curvature_gain ~ U{morph['curvature_gain']}, per segment; morph written to dataset")
 
     print(f"Generating {d['n_train']} train samples ({d['mode']}) ...")
     train = generate_dataset(arm, d["n_train"], mode=d["mode"],
                              babble_step=d["babble_step"],
                              shape_points=d["shape_points"], seed=d["seed"],
-                             curvature_gain_range=gain_range)
+                             curvature_gain_range=gain_range, morph_ranges=morph)
     np.savez_compressed(os.path.join(args.out, "train.npz"), **train)
 
     print(f"Generating {d['n_val']} val samples (uniform) ...")
     val = generate_dataset(arm, d["n_val"], mode="uniform",
                            shape_points=d["shape_points"], seed=d["seed"] + 1,
-                           curvature_gain_range=gain_range)
+                           curvature_gain_range=gain_range, morph_ranges=morph)
     np.savez_compressed(os.path.join(args.out, "val.npz"), **val)
     print(f"Done. Wrote {args.out}/train.npz and {args.out}/val.npz")
 
