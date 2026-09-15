@@ -1,0 +1,270 @@
+{
+  "box": {
+    "seg_length": [
+      0.04,
+      0.08
+    ],
+    "curvature_gain": [
+      15.0,
+      35.0
+    ]
+  },
+  "sweeps": {
+    "seg_length": [
+      {
+        "value": 0.02,
+        "in_box": false,
+        "amortized": {
+          "best_of_K_mm": 6.375357508659363,
+          "success": 0.3046875
+        },
+        "blind": {
+          "best_of_K_mm": 7.072139531373978,
+          "success": 0.44140625
+        }
+      },
+      {
+        "value": 0.03,
+        "in_box": false,
+        "amortized": {
+          "best_of_K_mm": 2.9261838644742966,
+          "success": 0.94140625
+        },
+        "blind": {
+          "best_of_K_mm": 14.365330338478088,
+          "success": 0.01171875
+        }
+      },
+      {
+        "value": 0.04,
+        "in_box": true,
+        "amortized": {
+          "best_of_K_mm": 0.2834995975717902,
+          "success": 1.0
+        },
+        "blind": {
+          "best_of_K_mm": 12.80122622847557,
+          "success": 0.06640625
+        }
+      },
+      {
+        "value": 0.05,
+        "in_box": true,
+        "amortized": {
+          "best_of_K_mm": 0.1989117736229673,
+          "success": 1.0
+        },
+        "blind": {
+          "best_of_K_mm": 4.948822781443596,
+          "success": 0.56640625
+        }
+      },
+      {
+        "value": 0.06,
+        "in_box": true,
+        "amortized": {
+          "best_of_K_mm": 0.4072433221153915,
+          "success": 1.0
+        },
+        "blind": {
+          "best_of_K_mm": 5.408544559031725,
+          "success": 0.49609375
+        }
+      },
+      {
+        "value": 0.07,
+        "in_box": true,
+        "amortized": {
+          "best_of_K_mm": 0.747858895920217,
+          "success": 1.0
+        },
+        "blind": {
+          "best_of_K_mm": 12.985077686607838,
+          "success": 0.12109375
+        }
+      },
+      {
+        "value": 0.08,
+        "in_box": true,
+        "amortized": {
+          "best_of_K_mm": 1.0583540424704552,
+          "success": 0.99609375
+        },
+        "blind": {
+          "best_of_K_mm": 26.384323835372925,
+          "success": 0.01171875
+        }
+      },
+      {
+        "value": 0.09,
+        "in_box": false,
+        "amortized": {
+          "best_of_K_mm": 5.116736516356468,
+          "success": 0.59765625
+        },
+        "blind": {
+          "best_of_K_mm": 41.38137400150299,
+          "success": 0.00390625
+        }
+      },
+      {
+        "value": 0.1,
+        "in_box": false,
+        "amortized": {
+          "best_of_K_mm": 16.33656397461891,
+          "success": 0.03125
+        },
+        "blind": {
+          "best_of_K_mm": 56.822337210178375,
+          "success": 0.0
+        }
+      },
+      {
+        "value": 0.12,
+        "in_box": false,
+        "amortized": {
+          "best_of_K_mm": 61.552744358778,
+          "success": 0.0
+        },
+        "blind": {
+          "best_of_K_mm": 96.21872752904892,
+          "success": 0.0
+        }
+      }
+    ],
+    "curvature_gain": [
+      {
+        "value": 5.0,
+        "in_box": false,
+        "amortized": {
+          "best_of_K_mm": 10.926464572548866,
+          "success": 0.19921875
+        },
+        "blind": {
+          "best_of_K_mm": 21.323971450328827,
+          "success": 0.12890625
+        }
+      },
+      {
+        "value": 10.0,
+        "in_box": false,
+        "amortized": {
+          "best_of_K_mm": 5.1926737651228905,
+          "success": 0.5625
+        },
+        "blind": {
+          "best_of_K_mm": 25.94531700015068,
+          "success": 0.12109375
+        }
+      },
+      {
+        "value": 15.0,
+        "in_box": true,
+        "amortized": {
+          "best_of_K_mm": 0.5695295985788107,
+          "success": 1.0
+        },
+        "blind": {
+          "best_of_K_mm": 17.12365448474884,
+          "success": 0.140625
+        }
+      },
+      {
+        "value": 20.0,
+        "in_box": true,
+        "amortized": {
+          "best_of_K_mm": 0.2033915661741048,
+          "success": 1.0
+        },
+        "blind": {
+          "best_of_K_mm": 6.82463962584734,
+          "success": 0.359375
+        }
+      },
+      {
+        "value": 25.0,
+        "in_box": true,
+        "amortized": {
+          "best_of_K_mm": 0.40952296694740653,
+          "success": 1.0
+        },
+        "blind": {
+          "best_of_K_mm": 5.6440820917487144,
+          "success": 0.40625
+        }
+      },
+      {
+        "value": 30.0,
+        "in_box": true,
+        "amortized": {
+          "best_of_K_mm": 0.45241054613143206,
+          "success": 1.0
+        },
+        "blind": {
+          "best_of_K_mm": 15.392392873764038,
+          "success": 0.05859375
+        }
+      },
+      {
+        "value": 35.0,
+        "in_box": true,
+        "amortized": {
+          "best_of_K_mm": 0.7344625191763043,
+          "success": 0.99609375
+        },
+        "blind": {
+          "best_of_K_mm": 33.746324479579926,
+          "success": 0.0078125
+        }
+      },
+      {
+        "value": 40.0,
+        "in_box": false,
+        "amortized": {
+          "best_of_K_mm": 2.3260004818439484,
+          "success": 0.98046875
+        },
+        "blind": {
+          "best_of_K_mm": 51.64949595928192,
+          "success": 0.0
+        }
+      },
+      {
+        "value": 45.0,
+        "in_box": false,
+        "amortized": {
+          "best_of_K_mm": 7.352170534431934,
+          "success": 0.30078125
+        },
+        "blind": {
+          "best_of_K_mm": 65.60464203357697,
+          "success": 0.0
+        }
+      },
+      {
+        "value": 50.0,
+        "in_box": false,
+        "amortized": {
+          "best_of_K_mm": 19.191723316907883,
+          "success": 0.05078125
+        },
+        "blind": {
+          "best_of_K_mm": 70.05056738853455,
+          "success": 0.0
+        }
+      },
+      {
+        "value": 60.0,
+        "in_box": false,
+        "amortized": {
+          "best_of_K_mm": 64.52766805887222,
+          "success": 0.0
+        },
+        "blind": {
+          "best_of_K_mm": 65.29481709003448,
+          "success": 0.0
+        }
+      }
+    ]
+  }
+}
