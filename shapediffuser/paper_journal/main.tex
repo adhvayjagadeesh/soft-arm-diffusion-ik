@@ -1,0 +1,740 @@
+% MDPI Robotics submission. Build:
+%   export PATH="/Library/TeX/texbin:$PATH"
+%   pdflatex main && bibtex main && pdflatex main && pdflatex main
+%
+% Numbers marked \todo{} are the ONLY unverified values: they await the
+% 3-seed runs / mode-recall / scale runs still training. Every other number
+% traces to a committed JSON named in its table caption. Single-arm results
+% carry the 3-seed statistics from results_seed{0,1,2}.json.
+
+\documentclass[robotics,article,submit,moreauthors,pdftex]{Definitions/mdpi}
+
+\firstpage{1}
+\makeatletter\setcounter{page}{\@firstpage}\makeatother
+\pubvolume{xx}
+\issuenum{1}
+\articlenumber{5}
+\pubyear{2026}
+\copyrightyear{2026}
+\history{Received: date; Accepted: date; Published: date}
+
+\usepackage{xcolor,colortbl}
+\usepackage{tabularx}
+\usepackage{float}
+\newcolumntype{C}{>{\centering\arraybackslash}X}
+\newcommand{\todo}[1]{\textcolor{red}{[#1]}}
+\newcommand{\eg}{e.g.}
+
+\Title{One Model, Many Arms: Amortized Multimodal Inverse Kinematics Across a Continuous Family of Soft Continuum Manipulators}
+
+\Author{Adhvay Jagadeesh $^{1,}$*}
+\AuthorNames{Adhvay Jagadeesh}
+
+\address{%
+$^{1}$ \quad Independent Researcher}
+\corres{Correspondence: \todo{email}}
+
+\abstract{A learned inverse-kinematics (IK) model for a soft continuum arm is
+trained for one arm. Yet no two fabricated soft arms are the same arm:
+segment lengths, stiffness, and actuation gain vary by fabrication tolerance,
+and a model fitted to one instance is silently wrong on the next. We ask
+whether a single conditional diffusion model can amortize inverse
+kinematics across a continuous family of soft arms---solving IK for
+morphologies it never saw---and what makes that possible. On a
+piecewise-constant-curvature pneumatic arm whose four segment lengths and
+four curvature gains are each drawn per sample from a continuous box, a
+diffusion model conditioned on the morphology vector reaches $0.39\,$mm
+best-of-32 tip error with $100\%$ success on held-out in-distribution
+morphologies---matching a specialist trained on $5\times10^5$ samples of
+its own arm, with zero samples of any specific arm. A controlled ablation
+isolates the cause: the identical randomized data with the morphology
+\emph{withheld} yields $12.9\,$mm and $12\%$ success, a $33\times$ gap.
+Domain randomization fails not because randomizing is wrong but because
+hiding the morphology forces the model to regress to the mean arm, which
+also explains why gain randomization recovers nothing under dynamics-model
+change. Generalization is flat
+across the training box and degrades gracefully for $10$--$25\%$ beyond it
+before a sharp cliff. Deterministic and mixture-density regressors trained
+on the same data do not amortize ($14$--$16\,$mm in-distribution),
+because the morphology-conditioned inverse map is more multimodal, not
+less. We report the single-arm advantage, its redundancy mechanism, and the
+limits of transfer under dynamics-model change with three-seed statistics
+throughout. Code, data, and per-experiment result files are released.}
+
+\keyword{soft robotics; continuum manipulators; inverse kinematics;
+diffusion models; amortized inference; domain randomization; multimodal
+learning}
+
+\begin{document}
+
+% =========================================================================
+\section{Introduction}
+% =========================================================================
+
+A multi-segment pneumatic continuum arm with three chambers per segment has
+more actuation degrees of freedom than task degrees of freedom: for a
+four-segment arm, a 12-D actuation vector determines a 3-D tip position. The
+inverse map is one-to-many, and its preimages are not a connected null
+space---distinct arm shapes reach the same tip. A deterministic learned IK
+regressor trained by motor babbling~\cite{giorelli2015neural} fits the
+conditional \emph{mean} of this multimodal distribution and can return an
+actuation that realizes none of the true solutions. A conditional diffusion
+model~\cite{ho2020denoising,song2021denoising} learns the full conditional
+distribution $p(\mathbf{q}\,|\,\text{target})$ and can sample every solution
+mode. We establish below, with three-seed statistics, that this advantage is
+real, that it is specifically a redundancy effect, and that it does not
+survive a change of dynamics model.
+
+Every learned soft-arm IK method we are aware of, including the single-arm
+models we begin with, trains one model for one arm. This paper starts from the observation that
+\emph{one arm} is a fiction. A soft manipulator is a fabricated object:
+its segment lengths depend on where discs were bonded, its bending stiffness
+on the backbone rod's diameter (which goes as the fourth power, so a
+$\pm4\%$ diameter tolerance is a $\pm17\%$ stiffness range), and its
+actuation gain on tendon routing and material batch. Two arms built from the
+same drawing are two different arms. A model that must be retrained for each
+one---at $5\times10^5$ simulated samples and half an hour per arm---is a
+model that does not scale past the bench it was trained on.
+
+The question is therefore whether a single model can \emph{amortize}
+inverse kinematics across a family of arms: trained once on a continuous
+distribution of morphologies, and asked to solve IK for a specific
+morphology it never saw, given only that morphology's parameters as a
+conditioning input. This is the soft-robotic instance of a question now
+central to rigid-robot learning, where diffusion IK has been made to
+generalize across kinematic-tree \emph{topologies}~\cite{zhang2025ikdiffuser,
+limoyo2025generative}. Soft arms pose it differently: the morphology is not
+a discrete topology but a continuous vector, and the conditional
+distribution the model must represent is more multimodal, not less---the
+same tip is reached by different shapes on different arms.
+
+There is a specific reason to doubt the answer is yes. Domain randomization
+(DR)~\cite{tobin2017domain}---training on randomized arm parameters so that
+the model is robust to their variation---recovers \emph{nothing} under
+model change in our experiments, while degrading in-domain accuracy
+fivefold (Sec.~\ref{sec:transfer}). If randomizing the
+morphology hurts, why would a randomized family be learnable at all? The
+answer this paper gives is that DR randomized the arm but \emph{hid} it
+from the model. With the morphology withheld, the model must average over
+an ambiguous family; with it exposed, the model can learn the inverse map
+as a function of morphology. The difference is one conditioning vector,
+and it is the difference between a $12.9\,$mm model and a $0.39\,$mm one.
+
+Our contributions:
+\begin{enumerate}
+  \item \textbf{Amortization is free.} A single morphology-conditioned
+  diffusion model reaches $0.39\,$mm best-of-32 tip error and $100\%$
+  success on held-out in-distribution morphologies, matching a per-arm
+  specialist that spent the same data budget on one arm alone
+  (Sec.~\ref{sec:amort}).
+  \item \textbf{The information, not the data.} The same randomized training
+  set with the morphology withheld---domain randomization---reaches
+  $12.9\,$mm and $12\%$ success. Withholding the morphology costs $33\times$
+  in accuracy and lands \emph{below} the single-arm model even on that
+  arm. This is the mechanism behind DR's failure and the first controlled
+  isolation of it (Sec.~\ref{sec:blind}).
+  \item \textbf{A measured generalization envelope.} Accuracy is flat across
+  the training box, degrades gracefully $10$--$25\%$ past its edge, then
+  cliffs; extrapolation is asymmetric---shorter and stiffer transfer better
+  than longer and more compliant (Sec.~\ref{sec:envelope}).
+  \item \textbf{Only a multimodal model amortizes.} Deterministic and
+  mixture-density regressors trained on the identical morphology-conditioned
+  data reach $14$--$16\,$mm in-distribution. Amortization raises the
+  multimodality of the inverse map, and only a model that represents it can
+  exploit the conditioning (Sec.~\ref{sec:arch}).
+  \item \textbf{The single-arm advantage and its limits, with three-seed
+  statistics.} Diffusion IK dominates MLP and MDN baselines on one arm,
+  recovering $0.84\pm0.03$ of ground-truth modes where both recover none;
+  the advantage is isolated as redundancy resolution by two controlled
+  manipulations; and the learned inverse map collapses under
+  dynamics-model change on every seed, with the recovery mechanisms
+  quantified (Secs.~\ref{sec:single}, \ref{sec:mechanism},
+  \ref{sec:transfer}). The amortization result is read against this
+  honest account of what a learned inverse map can and cannot do.
+\end{enumerate}
+Negative and bounded results are reported with the same prominence as
+positive ones; Sec.~\ref{sec:limitations} states the limitations explicitly.
+
+% =========================================================================
+\section{Related Work}
+% =========================================================================
+
+\textbf{IK for continuum arms.} Non-learned approaches solve continuum IK by
+optimization through a model at query time: Jacobian schemes for
+nonconstant-curvature arms~\cite{giorelli2015neural}, real-time FEM
+inversion~\cite{duriez2013control}, and metaheuristic search with obstacle
+constraints~\cite{obstacleaware2025}. The constant-curvature kinematics
+underlying our simulator are reviewed in~\cite{webster2010design};
+STIFF-FLOP-style pneumatic arms motivate the three-chamber actuation
+model~\cite{cianchetti2014soft}. Learned approaches fit a deterministic
+target-to-actuation map on motor-babbling data~\cite{giorelli2015neural};
+mixture density networks~\cite{bishop1994mixture} are the classical answer
+to multimodal regression and serve as our learned multimodal baseline.
+Every learned method in this line is trained for one arm.
+
+\textbf{Diffusion and flow models for robots.} Denoising diffusion
+models~\cite{ho2020denoising} with DDIM sampling~\cite{song2021denoising} and
+classifier-free guidance~\cite{ho2022classifier} underpin diffusion
+policies~\cite{chi2023diffusion}. IKDiffuser~\cite{zhang2025ikdiffuser}
+solves IK for rigid kinematic trees and generalizes across
+\emph{topologies} by tokenizing end-effectors; generative graphical
+IK~\cite{limoyo2025generative} likewise generalizes over rigid-robot graphs.
+Neither addresses compliant bodies, and both treat morphology as a discrete
+structure rather than a continuous parameter. For continuum robots, flow
+matching has recently been used to learn a \emph{forward} shape model
+conditioned on actuation across multi-module tendon-driven
+arms~\cite{flowmatching2026continuum}; our problem is the inverse, and the
+quantity we condition on is the morphology, not the actuation.
+
+\textbf{Domain randomization and amortized inference.} DR~\cite{tobin2017domain}
+trains on randomized simulator parameters to induce robustness; the
+parameters are, by design, not exposed to the policy. The alternative---exposing the
+parameters as conditioning so that a single model serves a family---is
+amortized inference in the sense of~\cite{gershman2014amortized}, and is
+the design principle behind morphology-conditioned locomotion
+policies~\cite{gupta2022metamorph}. We are not aware of it having been
+applied to soft-arm IK, nor of a controlled comparison that isolates
+exposing the parameters from randomizing them.
+
+% =========================================================================
+\section{Setup}
+\label{sec:setup}
+% =========================================================================
+
+\subsection{The arm family}
+
+The training simulator is a four-segment piecewise-constant-curvature (PCC)
+arm~\cite{webster2010design}. Segment $i$ has length $L_i$ and three
+$120^\circ$-spaced chambers with normalized pressures
+$\mathbf{q}\in[0,1]^{12}$; a linear chamber-to-curvature map with gain
+$g_i$ yields per-segment curvature components $(k_x,k_y)$, and forward
+kinematics composes constant-curvature arcs. The model is batched and
+differentiable in $\mathbf{q}$, and---new here---in the per-segment
+lengths and gains, so that one forward pass evaluates a batch of
+\emph{different} arms.
+
+A \emph{morphology} is the vector
+$\boldsymbol{\theta}=(L_1,\dots,L_4,g_1,\dots,g_4)\in\mathbb{R}^8$. The
+\emph{nominal} arm of Sec.~\ref{sec:single} is $L_i=60\,$mm, $g_i=25$ (total
+length $240\,$mm). The \emph{training box} is
+$L_i\in[40,80]\,$mm, $g_i\in[15,35]$, each drawn independently and
+uniformly per sample; the nominal arm lies inside it. Total arm length
+across the box spans $160$--$320\,$mm and maximum reach $120$--$353\,$mm
+among the test morphologies below.
+
+\subsection{Three models, one training set}
+\label{sec:design}
+
+The design turns on a single contrast, so it is stated precisely. One
+training set of $5\times10^5$ samples is generated: for each, a morphology
+$\boldsymbol{\theta}$ is drawn from the box, an actuation $\mathbf{q}$ is
+drawn uniformly, and the tip is computed on \emph{that} arm. Three models
+are then trained.
+\begin{description}
+  \item[Amortized] conditioned on $[\text{tip},\boldsymbol{\theta}]$
+  (11-D). The model is told which arm each sample came from.
+  \item[Blind] conditioned on $[\text{tip}]$ only, on the \emph{identical}
+  samples. The model sees the same diversity of arms and is not told which
+  one any sample is. This is domain randomization, extended from the
+  gain-only randomization of Sec.~\ref{sec:transfer} to length and gain.
+  \item[Nominal] conditioned on $[\text{tip}]$, trained on $5\times10^5$
+  samples of the nominal arm alone. This is the single-arm model of
+  Sec.~\ref{sec:single}, and represents current practice.
+\end{description}
+Amortized and Blind differ in nothing but the eight conditioning
+dimensions. Any gap between them is attributable to the information, not
+to the data.
+
+\subsection{Models and protocol}
+
+The diffusion model is a residual MLP denoiser (six FiLM-conditioned blocks,
+width 512) trained as a DDPM ($T{=}1000$, cosine schedule) with
+classifier-free guidance (condition dropout $0.1$); sampling uses DDIM with
+20 steps and guidance weight $1.5$; both were fixed by ablation on the nominal arm
+(guidance has an inverted-U optimum at $1.5$; accuracy and recall saturate
+by ${\sim}20$ steps).
+Baselines are an MLP regressor and an MDN (eight components) matched in
+width, each trained in all three regimes, plus a classical
+optimization-based reference (gradient-descent IK through the differentiable
+PCC model from 32 random restarts, Adam, 300 iterations; grad-IK). Unless
+stated otherwise we sample $K{=}32$ candidates per target and report
+best-of-$K$; success means tip error under $5\,$mm.
+
+\textbf{Held-out morphologies.} Test arms fall in three bands. \emph{Nominal}
+is the single-arm model's arm, inside the box, so an interpolation test.
+\emph{In-distribution} is five morphologies drawn from the box with a
+separate seed; with eight continuous parameters, no test morphology
+coincides with any training sample. \emph{Extrapolation} is five arms
+outside the box: all segments long ($L{=}90\,$mm), short ($30\,$mm),
+stiff ($g{=}40$), compliant ($g{=}10$), and a mixed case alternating
+long-stiff and short-compliant segments. Every metric is computed on the
+test arm's own kinematics: a PCC arm is instantiated at that morphology and
+the full metric suite runs on it. Accuracy uses 512 targets per morphology
+sampled from that arm's reachable set.
+
+\textbf{Ground-truth modes.} For mode recall we enumerate the true IK
+solution set by a $2\times10^6$-sample sweep on the test arm, keeping
+actuations within tolerance and clustering with
+DBSCAN~\cite{ester1996dbscan} ($\varepsilon{=}12$,
+$\text{min\_samples}{=}5$; match radius $15$) in the 8-D per-segment
+curvature space, which removes the chamber map's per-segment null space.
+Evaluation targets on the nominal arm average $2.05$ modes.
+
+\textbf{Statistics.} Every $\pm$ is the population standard deviation over
+three training seeds. Where a result is single-seed it is marked so.
+
+% =========================================================================
+\section{The Single-Arm Advantage}
+\label{sec:single}
+% =========================================================================
+
+We first establish the single-arm result the amortization study builds on:
+on the nominal arm, with three training seeds, does a diffusion model beat
+deterministic and mixture-density regressors, and is the margin a
+multimodality margin?
+
+\begin{table}[H]
+\caption{Single-arm comparison on the nominal arm (mean $\pm$ std, 3 seeds;
+$K{=}32$). Mode recall and diversity over successful samples only. grad-IK
+is one optimization run per target and needs the differentiable simulator at
+query time. Source: \texttt{results\_seed\{0,1,2\}.json}.}
+\label{tab:single}
+\begin{tabularx}{\textwidth}{lCCCC}
+\toprule
+ & \textbf{Diffusion} & \textbf{grad-IK} & \textbf{MLP} & \textbf{MDN} \\
+\midrule
+Tip err.\ best-of-$K$ (mm) & $0.44\pm0.03$ & $\mathbf{0.013}$ & $13.4\pm0.0$ & $17.3\pm0.2$ \\
+Tip err.\ single sample (mm) & $\mathbf{1.69\pm0.15}$ & --- & $13.4\pm0.0$ & $83.6\pm2.7$ \\
+Success @ 5 mm & $\mathbf{1.00}$ & $\mathbf{1.00}$ & $0.060$ & $0.027$ \\
+Mode recall & $0.84\pm0.03$ & $\mathbf{0.85}$ & $0.00$ & $0.00$ \\
+Diversity (curv.\ space) & $28.2\pm0.2$ & $\mathbf{29.0}$ & $0.0$ & $0.0$ \\
+Obstacle success & $0.978\pm0.002$ & $\mathbf{0.980}$ & $0.040$ & $0.018$ \\
+Query time (ms/target) & $38.6\pm4.9$ & $428$ & $\mathbf{0.013}$ & $0.022$ \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Best-of-$K$ diffusion reaches $0.44\,$mm at $100\%$ success; the MLP,
+structurally limited to the conditional mean, plateaus at $13.4\,$mm, and
+the MDN does not improve on it. Against enumerated solution sets, diffusion
+recovers $0.84\pm0.03$ of modes and both learned baselines recover
+none---the MDN not through component collapse but because no component is
+accurate enough to count as a success. When the task requires any of $K$
+samples to be simultaneously accurate and collision-free among three random
+spherical obstacles, diffusion succeeds on $97.8\%$ of trials against
+$4.0\%$. grad-IK, with the simulator in hand, is the accuracy ceiling at
+$0.013\,$mm and recovers modes at a rate on par with diffusion; the learned
+model's distinction is that it answers from samples alone at a $5$--$11\times$
+lower query cost. On every task metric the \emph{worst} diffusion seed
+outperforms the \emph{best} learned-baseline seed---for tip error, $0.49$
+vs.\ $13.33\,$mm, a gap exceeding $400\times$ the across-seed standard
+deviation. The MDN's zero recall is not a training pathology: NLL decreases
+monotonically, $7.8$ of $8$ components remain effective, and sweeping the
+component count over $\{4,8,16,32\}$ never surpasses the plain MLP. These
+conclusions are not artifacts of the enumeration hyperparameters: across a
+$3{\times}3$ grid of DBSCAN $\varepsilon$ and match radius, the learned
+baselines stay at zero everywhere while diffusion and grad-IK trade the
+lead.
+
+% =========================================================================
+\section{Amortization Across Morphologies}
+\label{sec:amort}
+% =========================================================================
+
+\begin{table}[H]
+\caption{The central comparison: best-of-32 tip error and success at
+$5\,$mm, mean over the morphologies in each band. Amortized and Blind were
+trained on the identical $5\times10^5$ samples; Nominal on $5\times10^5$
+samples of the nominal arm. Seed 0; three-seed $\pm$ pending
+\todo{3-seed}. Source: \texttt{results\_morph\_3way\_seed0.json}.}
+\label{tab:threeway}
+\begin{tabularx}{\textwidth}{lCCCCCC}
+\toprule
+ & \multicolumn{2}{c}{\textbf{Amortized}} & \multicolumn{2}{c}{\textbf{Blind}} & \multicolumn{2}{c}{\textbf{Nominal}} \\
+\textbf{Band} & err (mm) & succ. & err (mm) & succ. & err (mm) & succ. \\
+\midrule
+Nominal arm     & $0.43$ & $100\%$ & $5.54$ & $47\%$ & $\mathbf{0.40}$ & $100\%$ \\
+In-distribution & $\mathbf{0.39}$ & $\mathbf{100\%}$ & $12.86$ & $12\%$ & $32.6$ & $4\%$ \\
+Extrapolation   & $\mathbf{6.09}$ & $\mathbf{62\%}$ & $34.4$ & $2\%$ & $61.6$ & $0.5\%$ \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Amortization is free}
+
+Table~\ref{tab:threeway} is the paper's central result. On the five
+held-out in-distribution morphologies, the amortized model reaches
+$0.39\,$mm best-of-32 tip error with $100\%$ success on every one
+(per-arm range $0.26$--$0.53\,$mm). On the nominal arm---which it never
+saw as an exact morphology---it reaches $0.43\,$mm, against $0.40\,$mm for
+the specialist that spent its entire $5\times10^5$-sample budget on that
+arm alone. The cost of generalizing across the family, measured on the
+family's own nominal member, is $0.03\,$mm.
+
+The specialist, conversely, is useless off its arm: $32.6\,$mm and $4\%$
+success in-distribution, $61.6\,$mm and $0.5\%$ extrapolating. Its errors
+on individual in-distribution arms range from $10$ to $65\,$mm; on the
+long-segment arm, $115\,$mm. A model trained on one arm has learned a
+lookup table for that arm, and the table is wrong everywhere else.
+
+\subsection{The information, not the data}
+\label{sec:blind}
+
+The Blind model was trained on the identical samples as the Amortized
+model. It reaches $12.86\,$mm and $12\%$ success in-distribution---a
+$33\times$ gap in error, attributable to nothing but the eight conditioning
+dimensions. On the nominal arm it reaches $5.54\,$mm and $47\%$: training
+on a randomized family \emph{without} the morphology lands worse than the
+single-arm specialist on that very arm.
+
+This is the mechanism behind domain randomization's failure. With the
+morphology hidden, a given tip target is consistent with a different
+actuation on every arm in the family; the model cannot resolve which, and
+regresses toward an actuation for the mean arm. The envelope sweep of
+Sec.~\ref{sec:envelope} shows exactly that signature: the Blind model is
+most accurate near the centre of the box and degrades toward every
+edge---not because the edge arms are harder, but because they are furthest
+from the mean it has learned. The finding that gain-DR
+degrades in-domain accuracy from $0.44$ to $2.18\,$mm and recovers nothing
+under model change (Sec.~\ref{sec:transfer}) is the same effect,
+observed without the ablation that explains it. DR does not fail because
+randomization is the wrong idea; it fails because withholding the
+parameters is.
+
+\subsection{The generalization envelope}
+\label{sec:envelope}
+
+\begin{table}[H]
+\caption{Generalization envelope: one morphology axis swept with the other
+at nominal, all four segments together. Best-of-32 error and success.
+Shaded rows are inside the training box. Seed 0; source:
+\texttt{results\_envelope\_seed0.json}.}
+\label{tab:envelope}
+\begin{tabularx}{\textwidth}{lCC|lCC}
+\toprule
+\multicolumn{3}{c|}{\textbf{Segment length (mm), $g{=}25$}} & \multicolumn{3}{c}{\textbf{Curvature gain, $L{=}60$}} \\
+$L$ & Amortized & Blind & $g$ & Amortized & Blind \\
+\midrule
+20 & $6.4$ / $31\%$ & $7.1$ / $44\%$ & 5 & $10.9$ / $20\%$ & $21.3$ / $13\%$ \\
+30 & $2.9$ / $94\%$ & $14.4$ / $1\%$ & 10 & $5.2$ / $56\%$ & $26.0$ / $12\%$ \\
+\rowcolor{gray!12} 40 & $0.28$ / $100\%$ & $12.8$ / $7\%$ & \cellcolor{gray!12} 15 & \cellcolor{gray!12} $0.57$ / $100\%$ & \cellcolor{gray!12} $17.1$ / $14\%$ \\
+\rowcolor{gray!12} 50 & $0.20$ / $100\%$ & $5.0$ / $57\%$ & \cellcolor{gray!12} 20 & \cellcolor{gray!12} $0.20$ / $100\%$ & \cellcolor{gray!12} $6.8$ / $36\%$ \\
+\rowcolor{gray!12} 60 & $0.41$ / $100\%$ & $5.4$ / $50\%$ & \cellcolor{gray!12} 25 & \cellcolor{gray!12} $0.41$ / $100\%$ & \cellcolor{gray!12} $5.6$ / $41\%$ \\
+\rowcolor{gray!12} 70 & $0.75$ / $100\%$ & $13.0$ / $12\%$ & \cellcolor{gray!12} 30 & \cellcolor{gray!12} $0.45$ / $100\%$ & \cellcolor{gray!12} $15.4$ / $6\%$ \\
+\rowcolor{gray!12} 80 & $1.06$ / $99.6\%$ & $26.4$ / $1\%$ & \cellcolor{gray!12} 35 & \cellcolor{gray!12} $0.73$ / $99.6\%$ & \cellcolor{gray!12} $33.8$ / $1\%$ \\
+90 & $5.1$ / $60\%$ & $41.4$ / $0.4\%$ & 40 & $2.3$ / $98\%$ & $51.7$ / $0\%$ \\
+100 & $16.3$ / $3\%$ & $56.8$ / $0\%$ & 45 & $7.4$ / $30\%$ & $65.6$ / $0\%$ \\
+120 & $61.6$ / $0\%$ & $96.2$ / $0\%$ & 50 & $19.2$ / $5\%$ & $70.1$ / $0\%$ \\
+ & & & 60 & $64.5$ / $0\%$ & $65.3$ / $0\%$ \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+A single extrapolation number would mislead; what a reader needs is the
+shape of the degradation. Table~\ref{tab:envelope} sweeps each axis from
+well inside the box to well outside. Inside, the amortized model is flat:
+$0.20$--$1.06\,$mm and $\geq 99.6\%$ success across the entire range of
+both axes. Just past the edge it degrades gracefully---$L{=}90\,$mm
+($12\%$ past) gives $5.1\,$mm at $60\%$; $g{=}40$ ($14\%$ past) gives
+$2.3\,$mm at $98\%$---and then cliffs: $L{=}120\,$mm and $g{=}60$ are
+$62$ and $65\,$mm at $0\%$.
+
+The envelope is asymmetric. Shortening extrapolates further than
+lengthening ($L{=}30\,$mm, $25\%$ below the box: $2.9\,$mm at $94\%$;
+$L{=}90\,$mm, $12\%$ above: $5.1\,$mm at $60\%$), and stiffening further
+than softening ($g{=}40$: $98\%$; $g{=}10$, $33\%$ below: $56\%$). Both
+directions that extrapolate well shrink the workspace; both that
+extrapolate poorly expand it into regions the training arms never reached.
+The model generalizes over the morphology axis but not to tip positions
+outside the union of training workspaces.
+
+The Blind column is the mean-arm signature made visible: best at the box
+centre ($L{=}50$--$60\,$mm, $g{=}20$--$25$), worse toward every edge, and
+never above $57\%$ success anywhere.
+
+\subsection{Data efficiency}
+\label{sec:data}
+
+A single-arm specialist's accuracy as a function of its training-set size
+is shown in Figure~\ref{fig:scaling}: $12.0\,$mm at $5\times10^3$
+samples, $1.86$ at $2\times10^4$, $0.78$ at $5\times10^4$, $0.51$ at
+$2\times10^5$, and $0.40\,$mm at $5\times10^5$. Reaching sub-millimetre
+accuracy on one arm costs that arm $\sim$$5\times10^4$ samples; reaching
+$0.4\,$mm costs it $5\times10^5$.
+
+The amortized model spent $5\times10^5$ samples across a continuous 8-D
+family---in expectation, zero samples at any specific morphology---and
+reaches $0.39\,$mm on morphologies it never saw. Per arm served, its data
+cost is not a number that can be written down: the family is a continuum.
+What can be said is that one specialist's total budget buys specialist-level
+accuracy on every arm in the box.
+
+\begin{figure}[H]
+\includegraphics[width=0.8\textwidth]{figures/fig_scaling.png}
+\caption{Single-arm dataset-size ablation on the nominal arm (single seed).
+(a) Best-of-$K$ tip error and (b) mode recall vs.\ training-set size;
+both saturate by ${\sim}0.5$--$1\times10^5$ samples. The amortized model
+reaches the $5\times10^5$-sample specialist's accuracy on every
+in-distribution arm with the same total budget spread across the family.}
+\label{fig:scaling}
+\end{figure}
+
+\todo{Amortized model at $10^5$ and
+$2\times10^5$ total samples, to locate where the amortized curve sits
+relative to the specialist curve: pending.}
+
+\subsection{Multimodality under amortization}
+\label{sec:modes}
+
+The single-arm advantage was a multimodality advantage
+(Table~\ref{tab:single}). Whether amortization preserves it---whether the
+model still recovers the distinct solution modes of an arm it never
+saw---determines whether the amortized model is an IK \emph{solver} or
+merely an IK \emph{regressor} that happens to be conditioned well.
+\todo{Mode recall and diversity on held-out morphologies, against
+ground-truth enumeration on each test arm: running.}
+
+\subsection{Only a multimodal model amortizes}
+\label{sec:arch}
+
+\begin{table}[H]
+\caption{Architecture comparison under amortization: all three models
+conditioned on $[\text{tip},\boldsymbol{\theta}]$ and trained on the same
+data. Best-of-32 error and success, seed 0. Source:
+\texttt{results\_morph\_seed0.json}.}
+\label{tab:arch}
+\begin{tabularx}{\textwidth}{lCCC}
+\toprule
+\textbf{Band} & \textbf{Diffusion} & \textbf{MLP} & \textbf{MDN} \\
+\midrule
+Nominal arm     & $\mathbf{0.42}$ / $100\%$ & $13.8$ / $1\%$ & $18.1$ / $2\%$ \\
+In-distribution & $\mathbf{0.39}$ / $100\%$ & $14.1$ / $3\%$ & $16.3$ / $5\%$ \\
+Extrapolation   & $\mathbf{6.2}$ / $61\%$ & $31.8$ / $15\%$ & $20.8$ / $18\%$ \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Given the morphology, does any architecture amortize? Table~\ref{tab:arch}
+says no. The MLP and MDN, trained on the identical morphology-conditioned
+data, reach $14.1$ and $16.3\,$mm in-distribution---no better than their
+single-arm performance in Table~\ref{tab:single}, and no better than they
+manage without the morphology at all. The conditioning is not the
+bottleneck for them; their inability to represent a multimodal conditional
+is. Amortizing over morphology does not reduce the multimodality of the
+inverse map---it adds a dimension along which the solution set varies---so
+the models that could not represent it on one arm cannot represent it on a
+family. Diffusion's advantage under amortization is not a capacity
+advantage: the MLP and MDN are matched in width, and the MLP achieves the
+\emph{lowest} validation loss of the three ($0.264$ vs.\ $0.267$ for
+diffusion). It fits the mean beautifully; the mean is not a solution.
+
+% =========================================================================
+\section{The Advantage Is Redundancy, Specifically}
+\label{sec:mechanism}
+% =========================================================================
+
+If diffusion's advantage---on one arm or on a family---is redundancy
+resolution, it should shrink when redundancy is removed and grow when it is
+added. Both predictions hold on one arm (Figure~\ref{fig:redundancy}), and
+the amortization results extend the second.
+
+\begin{figure}[H]
+\includegraphics[width=\textwidth]{figures/fig_redundancy.png}
+\caption{The diffusion advantage tracks actuation redundancy. (a) Replacing
+the 3-D tip target with a 24-D whole-shape target removes most of the
+redundancy: sampled diversity collapses ${\sim}80\times$ ($28.16\pm0.22$ to
+$0.346\pm0.022$; 3 seeds). (b) Increasing the number of segments (single
+seed per morphology) widens the diffusion--MLP accuracy gap monotonically
+from two to ten segments; from eight segments on, the MLP's obstacle-task
+success is $0\%$ while diffusion's stays ${\geq}99.5\%$.}
+\label{fig:redundancy}
+\end{figure}
+
+\textbf{Removing redundancy.} Conditioning on the full 24-D body shape
+instead of the 3-D tip pins down almost the whole configuration. Diffusion's
+sampled diversity collapses from $28.16\pm0.22$ to $0.346\pm0.022$
+(${\sim}80\times$), and the MLP's accuracy disadvantage shrinks from
+${\sim}30\times$ to ${\sim}3\times$ ($0.49$ vs.\ $0.16\,$mm per-point
+error, both at $100\%$ success, 3 seeds). When there is one answer, a
+deterministic regressor is nearly as good.
+
+\textbf{Adding redundancy.} Across two-, six-, eight-, and ten-segment
+arms (single seed each), the MLP's error grows monotonically from $1.7$ to
+$103.2\,$mm with $0\%$ success from eight segments on, while diffusion
+degrades gracefully ($0.11$ to $3.2\,$mm, $\geq 99.8\%$ success). Amortizing
+over morphology is a third way of adding redundancy---the same tip is now
+reachable by different shapes on different arms---and Sec.~\ref{sec:arch}
+shows the same ordering: the deterministic models fail, the multimodal one
+does not.
+
+% =========================================================================
+\section{Under Dynamics-Model Change}
+\label{sec:transfer}
+% =========================================================================
+
+Amortization across morphology is generalization across \emph{parameters
+of the same model}. It is a different question whether a learned inverse
+map survives a change of \emph{dynamics model}---executing PCC-trained
+actuations on a Cosserat-rod simulation of the same arm (PyElastica,
+48 elements, $1.5\,$s damped horizon;~\cite{gazzola2018forward,zhang2019modeling}).
+It does not: accuracy collapses from $0.67\pm0.03$ to $139.9\pm1.8\,$mm
+with $0\%$ success on every seed, and the discrepancy is
+directional---no couple gain or damping constant aligns the two workspaces.
+
+We characterized what recovers this loss and what does not;
+Table~\ref{tab:synthesis} summarizes and Figures~\ref{fig:budget}
+and~\ref{fig:cliff} give the two central curves.
+Selection under an Elastica query budget improves every target but never
+solves one; a diversity-aware query ordering significantly beats a
+confidence ordering (paired $t{=}3.34$, $p{\approx}0.002$); guided
+sampling is suggestive at best; fine-tuning on $10^4$ target-domain samples
+yields the only nonzero success ($67.1\pm0.9\,$mm, $10\%$) at the price of
+catastrophic forgetting, and mixing source data back in collapses the gain
+below the first grid point---a retention--transfer cliff with no sweet spot.
+
+\begin{figure}[H]
+\includegraphics[width=0.8\textwidth]{figures/fig_query_budget.png}
+\caption{Candidate selection under an Elastica query budget ($n{=}45$
+targets, $K{=}32$ candidates, mean $\pm$ SEM). A diversity-aware
+(farthest-point) ordering of which candidates to evaluate beats a
+confidence ordering; in the paired design the difference is significant at
+$m{=}8$ and $m{=}16$ ($t{=}3.34$ and $3.21$, $p{\approx}0.002$).}
+\label{fig:budget}
+\end{figure}
+
+\begin{figure}[H]
+\includegraphics[width=0.8\textwidth]{figures/fig_finetune_cliff.png}
+\caption{The retention--transfer cliff (mean $\pm$ std, 3 seeds; six
+mixing ratios). Fine-tuning on $10^4$ Elastica samples: retention improves
+smoothly as source data is mixed back in, but the transfer gain collapses
+almost entirely by the first grid point ($5\%$). There is no sweet spot.}
+\label{fig:cliff}
+\end{figure}
+
+\begin{table}[H]
+\caption{Recovery mechanisms under dynamics-model change (Elastica-domain
+performance; best configuration of each; each row on its own held-out
+target set, 15--45 targets).}
+\label{tab:synthesis}
+\begin{tabularx}{\textwidth}{lCCl}
+\toprule
+\textbf{Mechanism} & \textbf{err (mm)} & \textbf{succ.} & \textbf{Cost / caveat} \\
+\midrule
+none (top-1 candidate) & $161.5$ & $0\%$ & no target queries \\
+best-of-32 selection & $130.4$ & $0\%$ & 32 queries/target \\
+\; + diversity order & $-6.7$ at $m{=}8$ & $0\%$ & same queries; $p{\approx}0.002$ \\
+guided sampling & $129.0$ & $0\%$ & 400 labels; suggestive \\
+gain randomization (blind) & $140.6$ & $0\%$ & degrades source; no gain \\
+fine-tune, $0\%$ mix & $\mathbf{67.1\pm0.9}$ & $\mathbf{10\%}$ & forgets source ($133\,$mm) \\
+fine-tune, $\geq 5\%$ mix & $\geq 133.8$ & $\leq 10\%$ & retains source, forfeits gain \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The row labelled \emph{gain randomization} is the one this paper
+reinterprets. It was reported as a null result: randomizing the gain buys
+nothing. Sec.~\ref{sec:blind} shows why. That model was Blind; it had
+learned the mean arm, and the mean arm is no closer to the Cosserat arm
+than the nominal one. Whether an \emph{Amortized} model---one that has
+learned the inverse map as a function of morphology---can be steered
+toward the Cosserat arm by inferring an effective morphology for it is the
+natural next question, and one this paper's machinery makes askable. It
+is not answered here.
+
+% =========================================================================
+\section{Discussion}
+% =========================================================================
+
+\textbf{What amortization buys.} A practitioner with a fabricated soft arm
+whose segment lengths and gains can be measured---or estimated from a
+handful of calibration poses---can use one pretrained model rather than
+train one. The accuracy cost is nil inside the training family and modest
+for $10$--$25\%$ beyond it. Because the conditioning is a continuous
+vector, the model also supports a mode of use no per-arm model can: sweeping
+$\boldsymbol{\theta}$ at a fixed target to ask which morphology in the
+family reaches it most easily---a design-space query answered in
+milliseconds.
+
+\textbf{Why the ablation matters.} The Blind result is, we believe, the
+first controlled demonstration that domain randomization's failure on this
+class of problem is specifically an information failure. The practical
+consequence is direct: when the randomized parameters can be observed at
+deployment, they should be conditioned on, not marginalized over. DR is the
+right tool only when the parameters are genuinely unobservable, and its
+cost in that case---a model that has learned the mean arm---should be
+budgeted for.
+
+\textbf{Why only diffusion.} The MLP's lowest validation loss alongside its
+worst accuracy is the cleanest statement of the paper's mechanism. A model
+that fits the conditional mean can fit it arbitrarily well and still return
+an actuation that is not a solution, because the solutions are a set and
+the mean of a set is not in it. Amortization makes the set larger.
+
+\textbf{Relation to rigid-robot amortization.} IKDiffuser~\cite{zhang2025ikdiffuser}
+amortizes over discrete kinematic-tree topologies by tokenization. The soft
+case differs in that the morphology is a continuous parameter of a single
+topology, which makes interpolation and extrapolation meaningful
+notions---and the envelope of Sec.~\ref{sec:envelope} is, to our
+knowledge, the first such measurement for a generative IK model on any
+robot.
+
+% =========================================================================
+\section{Limitations}
+\label{sec:limitations}
+% =========================================================================
+
+(1) \textbf{Simulation only.} Every result is on a simulated arm; no claim
+is made about hardware. The motivating fabrication-variability argument is
+a reason to want amortization, not evidence that this model delivers it on
+a physical arm. (2) \textbf{The morphology must be known.} The amortized
+model is conditioned on $\boldsymbol{\theta}$; it does not infer it. On a
+physical arm the eight parameters would have to be measured or calibrated,
+and the model's sensitivity to error in them is not characterized here.
+(3) \textbf{One segment count.} The family varies lengths and gains at
+fixed $N{=}4$; segment count changes the actuation dimension and is
+outside this study's conditioning scheme. (4) \textbf{Statistical
+coverage.} The single-arm comparison, shape-conditioning, transfer
+collapse, and fine-tuning grid carry three-seed statistics from the prior
+study. Of the new results, \todo{Table~\ref{tab:threeway} carries three
+seeds; the envelope sweep, architecture comparison, and data-efficiency
+results are single-seed}. (5) \textbf{Extrapolation is bounded.} The model
+does not generalize to tip positions outside the union of training
+workspaces; the cliff in Table~\ref{tab:envelope} is a real boundary, not
+a tail. (6) \textbf{Dynamics-model change is not solved.} Sec.~\ref{sec:transfer}
+is carried over as an honest boundary on what any learned inverse map in
+this family can currently do.
+
+% =========================================================================
+\section{Conclusions}
+% =========================================================================
+
+One conditional diffusion model, told which arm it is solving for,
+solves inverse kinematics for an entire continuous family of soft
+continuum arms---at the accuracy of a per-arm specialist, with no data from
+any specific arm, and with graceful degradation for a measured distance
+beyond the family it was trained on. The same data with the morphology
+withheld does not: domain randomization's well-known failure on this
+problem is an information failure, isolated here for the first time by an
+ablation that changes nothing but eight conditioning dimensions. Only a
+model that represents the multimodal solution set can exploit that
+information, because amortizing over morphology makes the set larger. For
+learned soft-arm IK, the path past the single-arm model is not more data
+from that arm but a model conditioned on which arm it is.
+
+\vspace{6pt}
+
+\funding{This research received no external funding.}
+
+\acknowledgments{All code, configuration, per-experiment result files, and
+training-data generators are available at
+\url{https://github.com/adhvayjagadeesh/soft-arm-diffusion-ik}. Every
+number in this paper traces to a committed result file named in its table
+caption.}
+
+\conflictsofinterest{The author declares no conflict of interest.}
+
+\reftitle{References}
+\externalbibliography{yes}
+\bibliography{references}
+
+\end{document}
