@@ -92,7 +92,9 @@ def fig_threeway(three=False):
             ax.set_ylim(0, 1.0)
     axes[0].set_title(f"(a) accuracy ({src})")
     axes[1].set_title(f"(b) ground-truth mode recall ({src})")
-    axes[1].legend(loc="upper right", frameon=False)
+    h, l = axes[1].get_legend_handles_labels()
+    fig.legend(h, l, loc="lower center", ncol=3, frameon=False, bbox_to_anchor=(0.5, -0.06))
+    fig.subplots_adjust(bottom=0.22)
     save(fig, "fig_threeway")
 
 
