@@ -1,0 +1,26 @@
+{
+  "specialist on in_dist_0 (5e5 of THIS arm)": {
+    "tip_err_best_of_K_mm": 0.3333392087370157,
+    "success": 1.0,
+    "mode_recall": 1.0,
+    "diversity": 21.107590770721437
+  },
+  "amortized seed0 (0 samples of this arm)": {
+    "tip_err_best_of_K_mm": 0.4224663716740906,
+    "success": 1.0,
+    "mode_recall": 1.0,
+    "diversity": 21.06542043685913
+  },
+  "amortized seed1": {
+    "tip_err_best_of_K_mm": 0.406417966587469,
+    "success": 1.0,
+    "mode_recall": 1.0,
+    "diversity": 21.284399843215944
+  },
+  "amortized seed2": {
+    "tip_err_best_of_K_mm": 0.35440782085061073,
+    "success": 1.0,
+    "mode_recall": 1.0,
+    "diversity": 20.92614679336548
+  }
+}

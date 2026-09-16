@@ -1,0 +1,48 @@
+{
+  "n_theta_searched": 20000,
+  "tol_m": 0.005,
+  "arms": {
+    "nominal": {
+      "blind": {
+        "valid_on_queried_arm": 0.021875,
+        "valid_on_some_arm": 1.0
+      },
+      "amortized": {
+        "valid_on_queried_arm": 0.9984375,
+        "valid_on_some_arm": 1.0
+      },
+      "random q": {
+        "valid_on_queried_arm": 0.0,
+        "valid_on_some_arm": 0.0765625
+      }
+    },
+    "in_dist": {
+      "blind": {
+        "valid_on_queried_arm": 0.0,
+        "valid_on_some_arm": 1.0
+      },
+      "amortized": {
+        "valid_on_queried_arm": 0.996875,
+        "valid_on_some_arm": 0.9609375
+      },
+      "random q": {
+        "valid_on_queried_arm": 0.0,
+        "valid_on_some_arm": 0.065625
+      }
+    },
+    "extrap_stiff": {
+      "blind": {
+        "valid_on_queried_arm": 0.0,
+        "valid_on_some_arm": 0.996875
+      },
+      "amortized": {
+        "valid_on_queried_arm": 0.3765625,
+        "valid_on_some_arm": 0.4
+      },
+      "random q": {
+        "valid_on_queried_arm": 0.0,
+        "valid_on_some_arm": 0.0421875
+      }
+    }
+  }
+}
