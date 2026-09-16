@@ -2,10 +2,9 @@
 %   export PATH="/Library/TeX/texbin:$PATH"
 %   pdflatex main && bibtex main && pdflatex main && pdflatex main
 %
-% Numbers marked \todo{} are the ONLY unverified values: they await the
-% 3-seed runs / mode-recall / scale runs still training. Every other number
-% traces to a committed JSON named in its table caption. Single-arm results
-% carry the 3-seed statistics from results_seed{0,1,2}.json.
+% Every number traces to a committed result JSON named in its table caption;
+% scripts/print_paper_tables.py regenerates the amortization table rows from
+% results_morph_3seed.json. The only remaining \todo is the author email.
 
 \documentclass[robotics,article,submit,moreauthors,pdftex]{Definitions/mdpi}
 
@@ -43,12 +42,12 @@ kinematics across a continuous family of soft arms---solving IK for
 morphologies it never saw---and what makes that possible. On a
 piecewise-constant-curvature pneumatic arm whose four segment lengths and
 four curvature gains are each drawn per sample from a continuous box, a
-diffusion model conditioned on the morphology vector reaches $0.39\,$mm
-best-of-32 tip error with $100\%$ success on held-out in-distribution
-morphologies---matching a specialist trained on $5\times10^5$ samples of
+diffusion model conditioned on the morphology vector reaches
+$0.41\pm0.04\,$mm best-of-32 tip error with $100\%$ success on held-out
+in-distribution morphologies (three seeds)---matching a specialist trained on $5\times10^5$ samples of
 its own arm, with zero samples of any specific arm. A controlled ablation
 isolates the cause: the identical randomized data with the morphology
-\emph{withheld} yields $12.9\,$mm and $12\%$ success, a $33\times$ gap.
+\emph{withheld} yields $12.7\pm0.2\,$mm and $12\%$ success, a $31\times$ gap.
 Domain randomization fails not because randomizing is wrong but because
 hiding the morphology forces the model to regress to the mean arm, which
 also explains why gain randomization recovers nothing under dynamics-model
@@ -57,7 +56,9 @@ across the training box and degrades gracefully for $10$--$25\%$ beyond it
 before a sharp cliff. Deterministic and mixture-density regressors trained
 on the same data do not amortize ($14$--$16\,$mm in-distribution),
 because the morphology-conditioned inverse map is more multimodal, not
-less. We report the single-arm advantage, its redundancy mechanism, and the
+less. The amortized model recovers $0.96\pm0.01$ of each unseen arm's
+ground-truth solution modes, as many as a specialist recovers on its own
+arm. We report the single-arm advantage, its redundancy mechanism, and the
 limits of transfer under dynamics-model change with three-seed statistics
 throughout. Code, data, and per-experiment result files are released.}
 
@@ -118,18 +119,18 @@ answer this paper gives is that DR randomized the arm but \emph{hid} it
 from the model. With the morphology withheld, the model must average over
 an ambiguous family; with it exposed, the model can learn the inverse map
 as a function of morphology. The difference is one conditioning vector,
-and it is the difference between a $12.9\,$mm model and a $0.39\,$mm one.
+and it is the difference between a $12.7\,$mm model and a $0.41\,$mm one.
 
 Our contributions:
 \begin{enumerate}
   \item \textbf{Amortization is free.} A single morphology-conditioned
-  diffusion model reaches $0.39\,$mm best-of-32 tip error and $100\%$
-  success on held-out in-distribution morphologies, matching a per-arm
+  diffusion model reaches $0.41\pm0.04\,$mm best-of-32 tip error and
+  $100\%$ success on held-out in-distribution morphologies, matching a per-arm
   specialist that spent the same data budget on one arm alone
   (Sec.~\ref{sec:amort}).
   \item \textbf{The information, not the data.} The same randomized training
   set with the morphology withheld---domain randomization---reaches
-  $12.9\,$mm and $12\%$ success. Withholding the morphology costs $33\times$
+  $12.7\pm0.2\,$mm and $12\%$ success. Withholding the morphology costs $31\times$
   in accuracy and lands \emph{below} the single-arm model even on that
   arm. This is the mechanism behind DR's failure and the first controlled
   isolation of it (Sec.~\ref{sec:blind}).
@@ -345,17 +346,17 @@ lead.
 \caption{The central comparison: best-of-32 tip error and success at
 $5\,$mm, mean over the morphologies in each band. Amortized and Blind were
 trained on the identical $5\times10^5$ samples; Nominal on $5\times10^5$
-samples of the nominal arm. Seed 0; three-seed $\pm$ pending
-\todo{3-seed}. Source: \texttt{results\_morph\_3way\_seed0.json}.}
+samples of the nominal arm. Mean $\pm$ std over three training seeds.
+Source: \texttt{results\_morph\_3seed.json}.}
 \label{tab:threeway}
 \begin{tabularx}{\textwidth}{lCCCCCC}
 \toprule
  & \multicolumn{2}{c}{\textbf{Amortized}} & \multicolumn{2}{c}{\textbf{Blind}} & \multicolumn{2}{c}{\textbf{Nominal}} \\
 \textbf{Band} & err (mm) & succ. & err (mm) & succ. & err (mm) & succ. \\
 \midrule
-Nominal arm     & $0.43$ & $100\%$ & $5.54$ & $47\%$ & $\mathbf{0.40}$ & $100\%$ \\
-In-distribution & $\mathbf{0.39}$ & $\mathbf{100\%}$ & $12.86$ & $12\%$ & $32.6$ & $4\%$ \\
-Extrapolation   & $\mathbf{6.09}$ & $\mathbf{62\%}$ & $34.4$ & $2\%$ & $61.6$ & $0.5\%$ \\
+Nominal arm     & $0.48\pm0.06$ & $100\%$ & $5.36\pm0.21$ & $48\pm5\%$ & $\mathbf{0.43\pm0.04}$ & $100\%$ \\
+In-distribution & $\mathbf{0.41\pm0.04}$ & $\mathbf{100\%}$ & $12.68\pm0.21$ & $12\%$ & $32.8\pm0.2$ & $5\%$ \\
+Extrapolation   & $\mathbf{6.19\pm0.31}$ & $\mathbf{62\pm3\%}$ & $34.7\pm0.1$ & $2\%$ & $61.1\pm0.7$ & $0.4\%$ \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -365,8 +366,8 @@ Extrapolation   & $\mathbf{6.09}$ & $\mathbf{62\%}$ & $34.4$ & $2\%$ & $61.6$ & 
 \caption{The central comparison. (a) Best-of-32 tip error (log scale;
 dashed line is the $5\,$mm success tolerance) and (b) ground-truth mode
 recall, by test band, for the three models of Sec.~\ref{sec:design}.
-Amortized and Blind share identical training data. Seed 0; three-seed
-error bars pending \todo{3-seed}.}
+Amortized and Blind share identical training data. Mean $\pm$ std over
+three training seeds.}
 \label{fig:threeway}
 \end{figure}
 
@@ -375,15 +376,17 @@ error bars pending \todo{3-seed}.}
 Table~\ref{tab:threeway} and Figure~\ref{fig:threeway} give the paper's
 central result. On the five
 held-out in-distribution morphologies, the amortized model reaches
-$0.39\,$mm best-of-32 tip error with $100\%$ success on every one
-(per-arm range $0.26$--$0.53\,$mm). On the nominal arm---which it never
-saw as an exact morphology---it reaches $0.43\,$mm, against $0.40\,$mm for
-the specialist that spent its entire $5\times10^5$-sample budget on that
-arm alone. The cost of generalizing across the family, measured on the
-family's own nominal member, is $0.03\,$mm.
+$0.41\pm0.04\,$mm best-of-32 tip error with $100\%$ success on every arm
+and every seed (per-seed means $0.40$, $0.46$, $0.37\,$mm). On the
+nominal arm---which it never saw as an exact morphology---it reaches
+$0.48\pm0.06\,$mm, against $0.43\pm0.04\,$mm for the specialist that
+spent its entire $5\times10^5$-sample budget on that arm alone. The cost
+of generalizing across the family, measured on the family's own nominal
+member, is $0.05\,$mm and within one standard deviation.
 
-The specialist, conversely, is useless off its arm: $32.6\,$mm and $4\%$
-success in-distribution, $61.6\,$mm and $0.5\%$ extrapolating. Its errors
+The specialist, conversely, is useless off its arm: $32.8\pm0.2\,$mm and
+$5\%$ success in-distribution, $61.1\pm0.7\,$mm and $0.4\%$
+extrapolating. Its errors
 on individual in-distribution arms range from $10$ to $65\,$mm; on the
 long-segment arm, $115\,$mm. A model trained on one arm has learned a
 lookup table for that arm, and the table is wrong everywhere else.
@@ -392,9 +395,10 @@ lookup table for that arm, and the table is wrong everywhere else.
 \label{sec:blind}
 
 The Blind model was trained on the identical samples as the Amortized
-model. It reaches $12.86\,$mm and $12\%$ success in-distribution---a
-$33\times$ gap in error, attributable to nothing but the eight conditioning
-dimensions. On the nominal arm it reaches $5.54\,$mm and $47\%$: training
+model. It reaches $12.68\pm0.21\,$mm and $12\%$ success
+in-distribution---a $31\times$ gap in error, stable to $\pm0.2\,$mm across
+seeds, attributable to nothing but the eight conditioning dimensions. On
+the nominal arm it reaches $5.36\pm0.21\,$mm and $48\pm5\%$: training
 on a randomized family \emph{without} the morphology lands worse than the
 single-arm specialist on that very arm.
 
@@ -493,6 +497,15 @@ cost is not a number that can be written down: the family is a continuum.
 What can be said is that one specialist's total budget buys specialist-level
 accuracy on every arm in the box.
 
+Amortization is not free at every budget. Trained on $10^5$ and
+$2\times10^5$ total samples (single seed), the amortized model reaches
+$1.36$ and $1.22\,$mm on held-out in-distribution arms, against $0.71$ and
+$0.51\,$mm for a specialist given the same total on its own arm---roughly
+$2\times$ worse, while still at $\geq 99\%$ success. At $5\times10^5$ the
+two converge ($0.39$ vs.\ $0.40\,$mm). Spreading a small budget over a
+family costs accuracy; spreading a large one does not. The crossover lies
+between $2\times10^5$ and $5\times10^5$ total samples for this family.
+
 \begin{figure}[H]
 \includegraphics[width=0.8\textwidth]{figures/fig_scaling.png}
 \caption{Single-arm dataset-size ablation on the nominal arm (single seed).
@@ -503,10 +516,6 @@ in-distribution arm with the same total budget spread across the family.}
 \label{fig:scaling}
 \end{figure}
 
-\todo{Amortized model at $10^5$ and
-$2\times10^5$ total samples, to locate where the amortized curve sits
-relative to the specialist curve: pending.}
-
 \subsection{Multimodality under amortization}
 \label{sec:modes}
 
@@ -514,18 +523,19 @@ relative to the specialist curve: pending.}
 \caption{Mode recall and solution diversity on held-out morphologies,
 against ground-truth solution sets enumerated on each test arm ($2\times10^6$
 sweep, DBSCAN in curvature space; 20 targets per arm, successful samples
-only). Nominal band is one arm; in-distribution is three held-out arms;
-extrapolation is five. Seed 0; three-seed $\pm$ pending \todo{3-seed}.
-Source: \texttt{results\_morph\_modes\_seed0.json}.}
+only). Nominal band is one arm; in-distribution is five held-out arms;
+extrapolation is the three of five arms on which enumeration found modes
+(see text). Mean $\pm$ std over three training seeds. Source:
+\texttt{results\_morph\_3seed.json}.}
 \label{tab:modes}
 \begin{tabularx}{\textwidth}{lCCCCCC}
 \toprule
  & \multicolumn{2}{c}{\textbf{Amortized}} & \multicolumn{2}{c}{\textbf{Blind}} & \multicolumn{2}{c}{\textbf{Nominal}} \\
 \textbf{Band} & recall & div. & recall & div. & recall & div. \\
 \midrule
-Nominal arm     & $\mathbf{0.90}$ & $27.8$ & $0.17$ & $7.8$ & $0.79$ & $\mathbf{28.5}$ \\
-In-distribution & $\mathbf{0.94}$ & $\mathbf{24.2}$ & $0.03$ & $0.0$ & $0.00$ & $0.0$ \\
-Extrapolation   & $\mathbf{0.49}$ & $\mathbf{6.7}$ & $0.02$ & $0.0$ & $0.00$ & $0.0$ \\
+Nominal arm     & $\mathbf{0.86\pm0.04}$ & $27.4\pm0.5$ & $0.17\pm0.02$ & $5.0\pm1.6$ & $0.85\pm0.03$ & $\mathbf{28.1\pm0.2}$ \\
+In-distribution & $\mathbf{0.96\pm0.01}$ & $\mathbf{25.0\pm0.2}$ & $0.02\pm0.01$ & $0.2\pm0.3$ & $0.02\pm0.01$ & $0.2\pm0.2$ \\
+Extrapolation   & $\mathbf{0.52\pm0.01}$ & $\mathbf{6.4\pm0.6}$ & $0.02\pm0.01$ & $0.0$ & $0.00$ & $0.0$ \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -536,17 +546,25 @@ model still recovers the distinct solution modes of an arm it never
 saw---decides whether the amortized model is an IK \emph{solver} or merely
 an IK \emph{regressor} that happens to be conditioned well.
 Table~\ref{tab:modes} answers: it is a solver. On held-out in-distribution
-arms the amortized model recovers $0.94$ of enumerated ground-truth modes,
-with sampled diversity $24.2$ in curvature space---as high a recall as the
-specialist achieves on the one arm it was trained for ($0.79$ on this
-target draw), and diversity in the same range ($28.5$). The Blind model
-recovers essentially none ($0.03$): a model that has learned the mean arm
-does not merely miss the target, it misses every mode of every arm.
+arms the amortized model recovers $0.96\pm0.01$ of enumerated ground-truth
+modes, with sampled diversity $25.0\pm0.2$ in curvature space---a
+\emph{higher} recall than the specialist achieves on the one arm it was
+trained for ($0.85\pm0.03$), and diversity in the same range
+($28.1\pm0.2$). On the nominal arm itself the two are indistinguishable
+($0.86\pm0.04$ vs.\ $0.85\pm0.03$). The Blind model recovers essentially
+none ($0.02\pm0.01$): a model that has learned the mean arm does not merely
+miss the target, it misses every mode of every arm.
 
 The extrapolation band exposes something a success rate alone hides. At
 $62\%$ success the amortized model reaches most targets past the box, but
-its mode recall is $0.49$ and diversity $6.7$: it finds \emph{a} solution
-before it finds \emph{all} of them. Multimodality degrades before accuracy
+its mode recall is $0.52\pm0.01$ and diversity $6.4\pm0.6$: it finds
+\emph{a} solution before it finds \emph{all} of them. (Two of the five
+extrapolation arms---all-long and all-stiff---are excluded from this
+average because the enumeration itself found no modes on them: the DBSCAN
+scale was calibrated to the nominal arm's curvature range, and those two
+arms move furthest from it. The model reaches $97\%$ success on the stiff
+arm, so this is an enumeration limit, not a model failure; it is the same
+limitation noted for segment-count variation in Sec.~\ref{sec:limitations}.) Multimodality degrades before accuracy
 does. A practitioner using the model outside its training family should
 expect correct actuations but not a complete picture of the alternatives,
 which matters for the obstacle-avoidance use of Table~\ref{tab:single},
@@ -752,15 +770,19 @@ and the model's sensitivity to error in them is not characterized here.
 fixed $N{=}4$; segment count changes the actuation dimension and is
 outside this study's conditioning scheme. (4) \textbf{Statistical
 coverage.} The single-arm comparison, shape-conditioning, transfer
-collapse, and fine-tuning grid carry three-seed statistics from the prior
-study. Of the new results, \todo{Table~\ref{tab:threeway} carries three
-seeds; the envelope sweep, architecture comparison, and data-efficiency
-results are single-seed}. (5) \textbf{Extrapolation is bounded.} The model
+collapse, fine-tuning grid, the central amortization comparison
+(Table~\ref{tab:threeway}), and held-out mode recall (Table~\ref{tab:modes})
+carry three-seed statistics. The query-budget, ordering, guidance,
+hyperparameter, segment-count, envelope-sweep, architecture-comparison,
+and amortized-scale results are single-seed. (5) \textbf{Extrapolation is bounded.} The model
 does not generalize to tip positions outside the union of training
 workspaces; the cliff in Table~\ref{tab:envelope} is a real boundary, not
 a tail. (6) \textbf{Dynamics-model change is not solved.} Sec.~\ref{sec:transfer}
-is carried over as an honest boundary on what any learned inverse map in
-this family can currently do.
+is an honest boundary on what any learned inverse map in this family can
+currently do. (7) \textbf{Mode enumeration does not reach every arm.} The
+DBSCAN parameters were calibrated on the nominal arm; on the two
+extrapolation arms whose curvature-space scale is furthest from it,
+enumeration found no ground-truth modes and recall is undefined there.
 
 % =========================================================================
 \section{Conclusions}
