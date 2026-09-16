@@ -486,13 +486,47 @@ relative to the specialist curve: pending.}
 \subsection{Multimodality under amortization}
 \label{sec:modes}
 
+\begin{table}[H]
+\caption{Mode recall and solution diversity on held-out morphologies,
+against ground-truth solution sets enumerated on each test arm ($2\times10^6$
+sweep, DBSCAN in curvature space; 20 targets per arm, successful samples
+only). Nominal band is one arm; in-distribution is three held-out arms;
+extrapolation is five. Seed 0; three-seed $\pm$ pending \todo{3-seed}.
+Source: \texttt{results\_morph\_modes\_seed0.json}.}
+\label{tab:modes}
+\begin{tabularx}{\textwidth}{lCCCCCC}
+\toprule
+ & \multicolumn{2}{c}{\textbf{Amortized}} & \multicolumn{2}{c}{\textbf{Blind}} & \multicolumn{2}{c}{\textbf{Nominal}} \\
+\textbf{Band} & recall & div. & recall & div. & recall & div. \\
+\midrule
+Nominal arm     & $\mathbf{0.90}$ & $27.8$ & $0.17$ & $7.8$ & $0.79$ & $\mathbf{28.5}$ \\
+In-distribution & $\mathbf{0.94}$ & $\mathbf{24.2}$ & $0.03$ & $0.0$ & $0.00$ & $0.0$ \\
+Extrapolation   & $\mathbf{0.49}$ & $\mathbf{6.7}$ & $0.02$ & $0.0$ & $0.00$ & $0.0$ \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
 The single-arm advantage was a multimodality advantage
 (Table~\ref{tab:single}). Whether amortization preserves it---whether the
 model still recovers the distinct solution modes of an arm it never
-saw---determines whether the amortized model is an IK \emph{solver} or
-merely an IK \emph{regressor} that happens to be conditioned well.
-\todo{Mode recall and diversity on held-out morphologies, against
-ground-truth enumeration on each test arm: running.}
+saw---decides whether the amortized model is an IK \emph{solver} or merely
+an IK \emph{regressor} that happens to be conditioned well.
+Table~\ref{tab:modes} answers: it is a solver. On held-out in-distribution
+arms the amortized model recovers $0.94$ of enumerated ground-truth modes,
+with sampled diversity $24.2$ in curvature space---as high a recall as the
+specialist achieves on the one arm it was trained for ($0.79$ on this
+target draw), and diversity in the same range ($28.5$). The Blind model
+recovers essentially none ($0.03$): a model that has learned the mean arm
+does not merely miss the target, it misses every mode of every arm.
+
+The extrapolation band exposes something a success rate alone hides. At
+$62\%$ success the amortized model reaches most targets past the box, but
+its mode recall is $0.49$ and diversity $6.7$: it finds \emph{a} solution
+before it finds \emph{all} of them. Multimodality degrades before accuracy
+does. A practitioner using the model outside its training family should
+expect correct actuations but not a complete picture of the alternatives,
+which matters for the obstacle-avoidance use of Table~\ref{tab:single},
+where the alternatives are the point.
 
 \subsection{Only a multimodal model amortizes}
 \label{sec:arch}
