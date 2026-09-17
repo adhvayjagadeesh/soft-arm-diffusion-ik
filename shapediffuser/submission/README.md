@@ -14,11 +14,18 @@
 | `latex_source.zip` | source files — `main.tex`, `references.bib`, `Definitions/` (MDPI class), `figures/`. Verified to compile standalone from a clean copy: 0 errors. |
 | `cover_letter.md` | paste into the cover-letter field |
 
-## Before you click submit — three things only you can do
+## Before you click submit
 
-1. **Author email.** `main.tex` line 35 has `\corres{Correspondence: \todo{email}}`. Replace the `\todo{...}` with your address and rebuild (`pdflatex main; bibtex main; pdflatex main; pdflatex main`), then regenerate `manuscript.pdf` and re-zip. It renders in red until you do.
-2. **Affiliation.** Currently "Independent Researcher". If CCIR or a school should be listed, edit `\address{...}` in `main.tex`.
-3. **Suggested reviewers.** SuSy asks for 3–5 with emails. That is your call; do not invent them.
+- **Email** — filled in (adhvayjagadeesh@gmail.com). No placeholders remain in the manuscript.
+- **Affiliation** — "Independent Researcher". If CCIR or a school should be listed, edit `\address{...}` in `main.tex` and rebuild.
+- **Suggested reviewers** — optional. MDPI's instructions say authors *may* suggest reviewers, typically from among the authors they cite; it is not a required field. If you leave it blank the editor assigns them.
+
+## Timeline and cost (MDPI Robotics, median values for H1 2026)
+
+- First decision: **~20 days** after submission
+- Acceptance to publication: **3.6 days**
+- **APC: CHF 1800** (roughly USD 2,000–2,200), charged **only on acceptance**. Some institutions hold MDPI Institutional Open Access Program (IOAP) memberships that discount this — check before paying.
+- Impact Factor 3.6 (2025), 5-year 4.0, JCR Q2 in Robotics
 
 ## What MDPI will ask for in the form that is already in the manuscript
 
