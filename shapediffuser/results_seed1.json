@@ -1,0 +1,65 @@
+{
+  "diffusion": {
+    "accuracy": {
+      "tip_err_best_of_K_mm": 0.48757344484329224,
+      "tip_err_single_mm": 1.8706632545217872,
+      "success_rate_best_of_K": 1.0
+    },
+    "multimodality": {
+      "mode_recall": 0.8625000063329935,
+      "diversity": 27.855215430259705
+    },
+    "obstacle_task": {
+      "success_rate": 0.98
+    },
+    "timing": {
+      "ms_per_target_batchK": 45.2224537730217,
+      "K": 32,
+      "device": "cpu"
+    }
+  },
+  "mdn": {
+    "accuracy": {
+      "tip_err_best_of_K_mm": 17.11157336831093,
+      "tip_err_single_mm": 82.4197381734848,
+      "success_rate_best_of_K": 0.025390625
+    },
+    "multimodality": {
+      "mode_recall": 0.0,
+      "diversity": 0.0
+    },
+    "obstacle_task": {
+      "success_rate": 0.015
+    },
+    "timing": {
+      "ms_per_target_batchK": 0.021107494831085205,
+      "K": 32,
+      "device": "cpu"
+    }
+  },
+  "mlp": {
+    "accuracy": {
+      "tip_err_best_of_K_mm": 13.326963409781456,
+      "tip_err_single_mm": 13.326963409781456,
+      "success_rate_best_of_K": 0.060546875
+    },
+    "multimodality": {
+      "mode_recall": 0.0,
+      "diversity": 0.0
+    },
+    "obstacle_task": {
+      "success_rate": 0.04
+    },
+    "timing": {
+      "ms_per_target_batchK": 0.014312565326690674,
+      "K": 32,
+      "device": "cpu"
+    }
+  },
+  "grad_ik": {
+    "accuracy": {
+      "tip_err_best_mm": 0.6368109644352415
+    }
+  },
+  "gt_modes_mean": 2.05
+}
