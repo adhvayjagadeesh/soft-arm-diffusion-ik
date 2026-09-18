@@ -13,6 +13,7 @@
 | `manuscript.pdf` | the manuscript (15 pages) |
 | `latex_source.zip` | source files — `main.tex`, `references.bib`, `Definitions/` (MDPI class), `figures/`. Verified to compile standalone from a clean copy: 0 errors. |
 | `cover_letter.pdf` | the form requires a PDF; upload this (the `.md` is the editable source) |
+| `graphical_abstract.png` | optional "Graphical Abstract" slot — 2280×1200 px, 300 dpi (MDPI min 1100×560) |
 | `figures.zip` | six figures as vector PDFs, numbered as in the manuscript — for the "Figures, Graphics, Images" slot |
 
 ## Before you click submit
