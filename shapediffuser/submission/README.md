@@ -42,7 +42,3 @@ Public, at https://github.com/adhvayjagadeesh/soft-arm-diffusion-ik. `main` is b
 ## Template version
 
 `Definitions/` is MDPI's **official** class, downloaded from mdpi.com on 2026-09-18 (class dated 2026-09-11, ACS numbered citation style, which is what *Robotics* uses). The manuscript compiles on it with 0 errors. Two logo files are pre-converted PDFs because this machine lacks Ghostscript; they are byte-identical in content to what the class would generate.
-
-## GenAI disclosure
-
-MDPI's current template requires a statement in Acknowledgments when generative AI was used for text, code, analysis, or figures. The manuscript carries one. It is the author's decision whether it stays, but the policy is the journal's, and it applies to this work.
