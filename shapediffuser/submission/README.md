@@ -16,8 +16,8 @@
 
 ## Before you click submit
 
-- **Email** — filled in (adhvayjagadeesh@gmail.com). No placeholders remain in the manuscript.
-- **Affiliation** — "Independent Researcher". If CCIR or a school should be listed, edit `\address{...}` in `main.tex` and rebuild.
+- **Email** — adhvayjagadeesh@gmail.com, in the manuscript.
+- **Affiliation** — none. The header reads "Independent Researcher (no institutional affiliation)"; SuSy requires a non-empty affiliation field, and this is the accepted wording for it.
 - **Suggested reviewers** — optional. MDPI's instructions say authors *may* suggest reviewers, typically from among the authors they cite; it is not a required field. If you leave it blank the editor assigns them.
 
 ## Timeline and cost (MDPI Robotics, median values for H1 2026)
