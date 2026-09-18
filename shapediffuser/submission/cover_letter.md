@@ -11,6 +11,8 @@ Learned inverse-kinematics models for soft continuum arms are trained for one ar
 
 The manuscript also reports the single-arm advantage, its redundancy mechanism, and the limits of transfer under dynamics-model change, so that the amortization result is read against an honest account of what a learned inverse map can and cannot do. Negative and bounded results are reported with the same prominence as positive ones.
 
+**Fit to *Robotics*.** The work sits squarely in the journal's Soft Robotics section: its subject is inverse kinematics for tendon- and pneumatically-actuated continuum manipulators, and its central practical claim — that one model can serve a whole family of fabricated arms rather than one — addresses a scaling problem specific to soft robots, whose morphology varies with every build. It also speaks to the journal's interest in generative and foundation models for robotics, since the method is a conditional diffusion model and the question is whether it amortizes across morphologies.
+
 All code, configuration, and per-experiment result files are public at https://github.com/adhvayjagadeesh/soft-arm-diffusion-ik; every number in the manuscript traces to a committed result file named in its table caption.
 
 This manuscript is original, has not been published previously, and is not under consideration elsewhere. The author declares no conflict of interest and received no external funding.

@@ -1,27 +1,24 @@
-% MDPI Robotics submission. Build:
+% MDPI Robotics submission, on the official MDPI class (2026-09-11). Build:
 %   export PATH="/Library/TeX/texbin:$PATH"
 %   pdflatex main && bibtex main && pdflatex main && pdflatex main
 %
 % Every number traces to a committed result JSON named in its table caption;
 % scripts/print_paper_tables.py regenerates the amortization table rows from
-% results_morph_3seed.json. The only remaining \todo is the author email.
+% results_morph_3seed.json.
 
-\documentclass[robotics,article,submit,moreauthors,pdftex]{Definitions/mdpi}
+\documentclass[robotics,article,submit,moreauthors]{Definitions/mdpi}
 
 \firstpage{1}
 \makeatletter\setcounter{page}{\@firstpage}\makeatother
-\pubvolume{xx}
+\pubvolume{1}
 \issuenum{1}
-\articlenumber{5}
+\articlenumber{0}
 \pubyear{2026}
 \copyrightyear{2026}
-\history{Received: date; Accepted: date; Published: date}
+\datereceived{ }
+\dateaccepted{ }
+\datepublished{ }
 
-\usepackage{xcolor,colortbl}
-\usepackage{tabularx}
-\usepackage{float}
-\newcolumntype{C}{>{\centering\arraybackslash}X}
-\newcommand{\todo}[1]{\textcolor{red}{[#1]}}
 \newcommand{\eg}{e.g.}
 
 \Title{One Model, Many Arms: Amortized Multimodal Inverse Kinematics Across a Continuous Family of Soft Continuum Manipulators}
@@ -900,16 +897,27 @@ from that arm but a model conditioned on which arm it is.
 
 \funding{This research received no external funding.}
 
-\acknowledgments{All code, configuration, per-experiment result files, and
-training-data generators are available at
+\dataavailability{All code, configuration, per-experiment result files, and
+training-data generators are publicly available at
 \url{https://github.com/adhvayjagadeesh/soft-arm-diffusion-ik}. Every
 number in this paper traces to a committed result file named in its table
-caption.}
+caption, and \texttt{scripts/print\_paper\_tables.py} regenerates the
+amortization tables from them.}
 
-\conflictsofinterest{The author declares no conflict of interest.}
+\acknowledgments{During the preparation of this study and manuscript, the
+author used Claude (Anthropic; Claude Opus 5, via Claude Code) for the
+purposes of drafting and editing text, writing and running experiment and
+analysis code, generating figures, and checking reported numbers against
+result files. The author has reviewed and edited the output and takes full
+responsibility for the content of this publication.}
 
+\conflictsofinterest{The author declares no conflicts of interest.}
+
+\begin{adjustwidth}{-\extralength}{0cm}
 \reftitle{References}
 \externalbibliography{yes}
 \bibliography{references}
+\PublishersNote{}
+\end{adjustwidth}
 
 \end{document}

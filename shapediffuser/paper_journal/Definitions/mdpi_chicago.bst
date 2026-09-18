@@ -76,7 +76,7 @@
 %
 % This file was originally copied from newapa.bst at ymir.claremont.edu.
 %
-% Features of chicago.bst:
+% Features of mdpi_chicago.bst, updated on December 17, 2024:
 % =======================
 %
 % - full names used in citations, but abbreviated citations are available
@@ -1010,17 +1010,10 @@ FUNCTION {output.bibitem}
 }
 
 %% For printing DOI numbers (it is a hyperlink but printed in black)
-FUNCTION {format.doi}
-{ doi empty$
-  { ""  }
-  {"\href{https://doi.org/" doi * "}" * }
-  if$
-}
-
 FUNCTION {formatfull.doi}
 { doi empty$
   { ""  }
-  {"doi:{\changeurlcolor{black}\href{https://doi.org/" doi * "}{\detokenize{" * doi * "}}}" * }
+  {"{\url{https://doi.org/" doi * "}}" * }
   if$
 }
 
@@ -1663,7 +1656,7 @@ FUNCTION {begin.bib}
     'skip$
     { preamble$ write$ newline$ }
   if$
-  "\begin{thebibliography}{}" write$ newline$
+  "\begin{thebibliography}{999}" write$ newline$
 }
 
 

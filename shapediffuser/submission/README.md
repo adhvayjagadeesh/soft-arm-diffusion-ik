@@ -12,7 +12,8 @@
 |---|---|
 | `manuscript.pdf` | the manuscript (15 pages) |
 | `latex_source.zip` | source files — `main.tex`, `references.bib`, `Definitions/` (MDPI class), `figures/`. Verified to compile standalone from a clean copy: 0 errors. |
-| `cover_letter.md` | paste into the cover-letter field |
+| `cover_letter.pdf` | the form requires a PDF; upload this (the `.md` is the editable source) |
+| `figures.zip` | six figures as vector PDFs, numbered as in the manuscript — for the "Figures, Graphics, Images" slot |
 
 ## Before you click submit
 
@@ -40,4 +41,8 @@ Public, at https://github.com/adhvayjagadeesh/soft-arm-diffusion-ik. `main` is b
 
 ## Template version
 
-`Definitions/mdpi.cls` is the 2020 MDPI class from a public mirror. The current template is on Overleaf ("MDPI Article Template"); MDPI accepts either, since production reformats. If you prefer the current one, drop `main.tex`, `references.bib`, and `figures/` into a fresh Overleaf copy of that template and replace the preamble macros — the body is portable.
+`Definitions/` is MDPI's **official** class, downloaded from mdpi.com on 2026-09-18 (class dated 2026-09-11, ACS numbered citation style, which is what *Robotics* uses). The manuscript compiles on it with 0 errors. Two logo files are pre-converted PDFs because this machine lacks Ghostscript; they are byte-identical in content to what the class would generate.
+
+## GenAI disclosure
+
+MDPI's current template requires a statement in Acknowledgments when generative AI was used for text, code, analysis, or figures. The manuscript carries one. It is the author's decision whether it stays, but the policy is the journal's, and it applies to this work.
